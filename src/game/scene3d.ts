@@ -4,6 +4,7 @@ import { buildFishingEnvironment } from './environmentBuild.ts'
 import type { HarborLayout } from './harborLayout.ts'
 import {
   SHUAI_ROD_TIP,
+  attachCharacterLights,
   buildGrandpaCharacter,
   buildShuaiShuaiCharacter,
 } from './characters.ts'
@@ -74,6 +75,8 @@ export class BadouziScene3D {
   private presets = PRESETS_BADOUZI
   private pointLights: THREE.PointLight[] = []
   private pierWorkLight!: THREE.PointLight
+  private pierSpot!: THREE.SpotLight
+  private pierRigLight!: THREE.PointLight
 
   private readonly rodTip = SHUAI_ROD_TIP.clone()
 
@@ -93,9 +96,17 @@ export class BadouziScene3D {
     this.scene = new THREE.Scene()
     applyNightSky(this.scene, this.renderer)
     this.night = createNightLighting(this.scene)
-    this.pierWorkLight = new THREE.PointLight('#ffffff', 3.5, 28, 1.35)
+    this.pierWorkLight = new THREE.PointLight('#fffaf0', 9, 35, 1.2)
     this.pierWorkLight.position.set(0, 3, 0)
     this.scene.add(this.pierWorkLight)
+
+    this.pierRigLight = new THREE.PointLight('#ffffff', 11, 24, 1.1)
+    this.scene.add(this.pierRigLight)
+
+    this.pierSpot = new THREE.SpotLight('#fffbeb', 14, 45, Math.PI / 3.2, 0.45, 1)
+    this.pierSpot.castShadow = false
+    this.scene.add(this.pierSpot)
+    this.scene.add(this.pierSpot.target)
 
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.5, 420)
     this.presets = spotId === 'chaojing' ? PRESETS_CHAOJING : PRESETS_BADOUZI
@@ -120,8 +131,10 @@ export class BadouziScene3D {
     )
 
     this.grandpaGroup = buildGrandpaCharacter()
+    attachCharacterLights(this.grandpaGroup)
     this.scene.add(this.grandpaGroup)
     this.shuaiGroup = buildShuaiShuaiCharacter()
+    attachCharacterLights(this.shuaiGroup)
     this.scene.add(this.shuaiGroup)
     this.bobber = this.buildBobber()
     this.scene.add(this.fishingLine)
@@ -202,9 +215,15 @@ export class BadouziScene3D {
       this.shuaiGroup.rotation.y = this.castFacingY
     }
 
-    this.pierWorkLight.position
+    const rigCenter = new THREE.Vector3()
       .copy(env.shuaiPosition)
-      .add(new THREE.Vector3(0.8, 3.2, -0.6))
+      .lerp(env.grandpaPosition, 0.45)
+    this.pierWorkLight.position.copy(rigCenter).add(new THREE.Vector3(0.6, 3.8, -0.8))
+    this.pierRigLight.position.copy(rigCenter).add(new THREE.Vector3(0, 2.6, 0.5))
+
+    this.pierSpot.position.copy(rigCenter).add(new THREE.Vector3(-1.5, 7, -4))
+    this.pierSpot.target.position.copy(rigCenter).add(new THREE.Vector3(0, 1.1, 0.8))
+    this.pierSpot.target.updateMatrixWorld()
   }
 
   dispose(): void {
