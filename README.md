@@ -41,8 +41,12 @@ npm run preview
 
 ### GitHub Pages
 
+**已在本機登入 GitHub？** 見 [DEPLOY-LOCAL.md](./DEPLOY-LOCAL.md)（複製貼上即可）。
+
+或手動步驟：
+
 1. 在 Cursor 按 **Create repo**（或到 [cursor.com/codebase](https://cursor.com/codebase) 建立 GitHub repository，建議名稱 `badouzi-fishing`）  
-2. 在本機或 Cloud Agent 執行（將 `你的帳號/badouzi-fishing` 換成實際 repo）：
+2. 在本機執行（將 `你的帳號/badouzi-fishing` 換成實際 repo）：
 
 ```bash
 chmod +x scripts/setup-github-pages.sh
