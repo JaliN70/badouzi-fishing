@@ -1,4 +1,4 @@
-import { FISH_TABLE, type FishSpecies } from './fish.ts'
+import { FISH_TABLE, formatHarborSpots, type FishSpecies } from './fish.ts'
 
 const STORAGE_KEY = 'badouzi-fishing-dex'
 
@@ -79,8 +79,12 @@ export function buildDexCards(): FishDexCard[] {
 }
 
 export function rarityLabel(rarity: number): string {
-  if (rarity >= 0.2) return '常見'
-  if (rarity >= 0.1) return '少見'
-  if (rarity >= 0.05) return '稀有'
+  if (rarity >= 0.12) return '常見'
+  if (rarity >= 0.06) return '少見'
+  if (rarity >= 0.03) return '稀有'
   return '極稀有'
+}
+
+export function harborLabel(species: FishSpecies): string {
+  return formatHarborSpots(species.harborSpots)
 }
