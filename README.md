@@ -41,15 +41,22 @@ npm run preview
 
 ### GitHub Pages
 
-1. 將 repository 同步到 **GitHub**（Cursor 介面的 **Create repo** 或自行新增 remote）  
-2. 在 GitHub：**Settings → Pages → Build and deployment → Source** 選 **GitHub Actions**  
-3. 推送 `main` 後，`.github/workflows/deploy-pages.yml` 會自動建置並部署  
-4. 網址格式：`https://<使用者>.github.io/<repo名稱>/`  
+1. 在 Cursor 按 **Create repo**（或到 [cursor.com/codebase](https://cursor.com/codebase) 建立 GitHub repository，建議名稱 `badouzi-fishing`）  
+2. 在本機或 Cloud Agent 執行（將 `你的帳號/badouzi-fishing` 換成實際 repo）：
+
+```bash
+chmod +x scripts/setup-github-pages.sh
+./scripts/setup-github-pages.sh 你的帳號/badouzi-fishing
+```
+
+3. GitHub → **Settings → Pages → Build and deployment → Source** 選 **GitHub Actions**  
+4. 推送 `main` 後 workflow `.github/workflows/deploy-pages.yml` 會建置並部署  
+5. 網址：`https://<使用者>.github.io/<repo名稱>/`
 
 本地若需模擬 Pages 子路徑建置：
 
 ```bash
-VITE_BASE=/你的-repo名稱/ npm run build
+VITE_BASE=/badouzi-fishing/ npm run build
 ```
 
 ## 技術
