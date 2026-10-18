@@ -134,6 +134,7 @@ export class BadouziFishingGame {
           onError?.('場景載入失敗')
           return
         }
+        this.scene3d.focusPierCamera()
         onReady?.()
         this.lastTs = performance.now()
         this.loop(this.lastTs)
@@ -176,6 +177,7 @@ export class BadouziFishingGame {
 
   startFishing(): void {
     this.phase = 'idle'
+    this.scene3d.focusPierCamera()
     this.setDialogue('帥帥', '好！我要釣一尾大的給阿公看！')
     this.resetCast()
     this.emitUi()

@@ -31,17 +31,19 @@ export interface SceneVisualState {
 
 const PRESETS_BADOUZI: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
   overview: { pos: new THREE.Vector3(52, 78, -62), target: new THREE.Vector3(-38, 1.2, 30) },
-  pier: { pos: new THREE.Vector3(-70, 6, 26), target: new THREE.Vector3(-52, 1.2, 34) },
+  pier: { pos: new THREE.Vector3(-63, 4.2, 18.5), target: new THREE.Vector3(-57, 2.4, 14) },
   sea: { pos: new THREE.Vector3(-44, 10, 62), target: new THREE.Vector3(-48, 0.6, 38) },
   museum: { pos: new THREE.Vector3(98, 32, 8), target: new THREE.Vector3(168, 10, -28) },
 }
 
 const PRESETS_CHAOJING: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
   overview: { pos: new THREE.Vector3(55, 72, -58), target: new THREE.Vector3(15, 1.2, 28) },
-  pier: { pos: new THREE.Vector3(-52, 6.5, 18), target: new THREE.Vector3(-32, 1.2, 38) },
+  pier: { pos: new THREE.Vector3(-43, 4.2, 12.5), target: new THREE.Vector3(-37, 2.4, 9) },
   sea: { pos: new THREE.Vector3(-36, 11, 58), target: new THREE.Vector3(-32, 0.6, 42) },
   museum: { pos: new THREE.Vector3(62, 20, 32), target: new THREE.Vector3(48, 12, 22) },
 }
+
+const CHARACTER_SCALE = 1.75
 
 export class BadouziScene3D {
   private canvas: HTMLCanvasElement
@@ -110,13 +112,11 @@ export class BadouziScene3D {
 
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.5, 420)
     this.presets = spotId === 'chaojing' ? PRESETS_CHAOJING : PRESETS_BADOUZI
-    this.camera.position.copy(this.presets.overview.pos)
 
     this.controls = new OrbitControls(this.camera, canvas)
     this.controls.enabled = false
     this.controls.enableDamping = true
     this.controls.dampingFactor = 0.06
-    this.controls.target.copy(this.presets.overview.target)
     this.controls.minDistance = 4
     this.controls.maxDistance = 140
     this.controls.minPolarAngle = 0.1
@@ -131,15 +131,18 @@ export class BadouziScene3D {
     )
 
     this.grandpaGroup = buildGrandpaCharacter()
+    this.grandpaGroup.scale.setScalar(CHARACTER_SCALE)
     attachCharacterLights(this.grandpaGroup)
     this.scene.add(this.grandpaGroup)
     this.shuaiGroup = buildShuaiShuaiCharacter()
+    this.shuaiGroup.scale.setScalar(CHARACTER_SCALE)
     attachCharacterLights(this.shuaiGroup)
     this.scene.add(this.shuaiGroup)
     this.bobber = this.buildBobber()
     this.scene.add(this.fishingLine)
 
     this.loadEnvironment()
+    this.focusPierCamera()
 
     this.resizeObs = new ResizeObserver(() => this.resize())
     this.resizeObs.observe(canvas)
@@ -156,7 +159,7 @@ export class BadouziScene3D {
     this.presets = spotId === 'chaojing' ? PRESETS_CHAOJING : PRESETS_BADOUZI
     this.clearEnvironment()
     this.loadEnvironment()
-    this.resetCamera()
+    this.focusPierCamera()
   }
 
   bootstrap(): Promise<void> {
@@ -196,7 +199,9 @@ export class BadouziScene3D {
     this.pierFocus.copy(env.pierFocus)
     this.seaCastDir.copy(env.castDirection)
     this.castFacingY = Math.atan2(env.castDirection.x, env.castDirection.z)
-    this.controls.target.copy(this.pierFocus.clone().setY(1.2))
+    this.controls.target
+      .copy(env.shuaiPosition)
+      .add(new THREE.Vector3(0, 1.2 * CHARACTER_SCALE, 0.3))
 
     this.pointLights = syncParkLamps(this.night.lampGroup, env.lampPositions, this.pointLights)
 
@@ -253,7 +258,16 @@ export class BadouziScene3D {
   }
 
   resetCamera(): void {
-    this.applyCameraPreset('overview')
+    this.focusPierCamera()
+  }
+
+  focusPierCamera(): void {
+    const p = this.presets.pier
+    this.camera.position.copy(p.pos)
+    this.controls.target.copy(p.target)
+    this.cameraT = 1
+    this.animatingCamera = false
+    this.camera.updateProjectionMatrix()
   }
 
   getViewRefLabel(): string {
