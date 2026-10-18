@@ -30,4 +30,4 @@ npm run preview
 
 ## 技術
 
-- Vite + TypeScript + Canvas 2D
+- Vite + TypeScript + Three.js（俯視 3D 場景）

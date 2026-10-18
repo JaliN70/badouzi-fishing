@@ -10,7 +10,7 @@ app.innerHTML = `
       <span>載入八斗子海邊…</span>
     </div>
     <div class="error-banner" id="error" hidden></div>
-    <canvas class="game-canvas" id="canvas" aria-label="基隆八斗子釣魚場景"></canvas>
+    <canvas class="game-canvas" id="canvas" aria-label="基隆八斗子俯視3D釣魚場景"></canvas>
 
     <header class="hud" id="hud">
       <div class="hud-block">
