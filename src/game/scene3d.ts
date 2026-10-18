@@ -38,12 +38,12 @@ const PRESETS_BADOUZI: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.
 
 const PRESETS_CHAOJING: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
   overview: { pos: new THREE.Vector3(55, 72, -58), target: new THREE.Vector3(15, 1.2, 28) },
-  pier: { pos: new THREE.Vector3(-41, 4.2, 11), target: new THREE.Vector3(-37.2, 2.5, 7) },
+  pier: { pos: new THREE.Vector3(16, 4.5, 36), target: new THREE.Vector3(23.4, 2.5, 33) },
   sea: { pos: new THREE.Vector3(-36, 11, 58), target: new THREE.Vector3(-32, 0.6, 42) },
   museum: { pos: new THREE.Vector3(62, 20, 32), target: new THREE.Vector3(48, 12, 22) },
 }
 
-const CHARACTER_SCALE = 1.75
+const CHARACTER_SCALE = 1.45
 
 export class BadouziScene3D {
   private canvas: HTMLCanvasElement

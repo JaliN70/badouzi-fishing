@@ -100,16 +100,16 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   roadSign(parent, '海科館站 · 深澳線', 88, 4.2, -52, Math.PI, 0.85)
 
   const cliff = mesh(
-    new THREE.BoxGeometry(180, 14, 22),
+    new THREE.BoxGeometry(95, 14, 22),
     stdMat(basalt, '#1f2937', { repeat: [12, 2], roughness: 0.92 }),
   )
-  cliff.position.set(40, 6, -24)
+  cliff.position.set(-18, 6, -28)
   parent.add(cliff)
   const cliffFace = mesh(
-    new THREE.BoxGeometry(180, 16, 4),
+    new THREE.BoxGeometry(95, 16, 4),
     stdMat(basalt, '#111827', { repeat: [14, 1], roughness: 0.95 }),
   )
-  cliffFace.position.set(40, 5, -12)
+  cliffFace.position.set(-18, 5, -16)
   parent.add(cliffFace)
 
   const skywalk = new THREE.Group()
@@ -155,22 +155,31 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   lampPositions.push(new THREE.Vector3(108, 17, 8))
   roadSign(parent, '潮境燈塔', 108, 6.5, 14, -0.5, 0.8)
 
-  const fishDeckLen = 28
+  const deckX = 24
+  const deckZ = 32
+  const fishDeckLen = 26
   const fishDeck = mesh(
-    new THREE.BoxGeometry(7, 0.35, fishDeckLen),
+    new THREE.BoxGeometry(7.5, 0.35, fishDeckLen),
     stdMat(wood, '#92400e', { repeat: [2, 10], roughness: 0.82 }),
   )
-  fishDeck.position.set(-38, pierDeckY, 6)
+  fishDeck.position.set(deckX, pierDeckY, deckZ)
   parent.add(fishDeck)
   for (let z = -fishDeckLen / 2 + 1; z < fishDeckLen / 2; z += 0.55) {
-    const plank = mesh(new THREE.BoxGeometry(6.5, 0.05, 0.1), stdMat(wood, '#78350f', { repeat: [1, 1] }))
-    plank.position.set(-38, pierDeckY + 0.22, 6 + z)
+    const plank = mesh(new THREE.BoxGeometry(7, 0.05, 0.1), stdMat(wood, '#78350f', { repeat: [1, 1] }))
+    plank.position.set(deckX, pierDeckY + 0.22, deckZ + z)
     parent.add(plank)
   }
   const rail = mesh(new THREE.BoxGeometry(0.1, 1, fishDeckLen - 0.5), stdMat(null, '#facc15'))
-  rail.position.set(-34.6, pierDeckY + 0.85, 6)
+  rail.position.set(deckX + 3.55, pierDeckY + 0.85, deckZ)
   parent.add(rail)
-  roadSign(parent, '釣魚平台 · 夜釣區', -36, pierDeckY + 2.6, 18, -0.2, 0.85)
+  roadSign(parent, '釣魚平台 · 夜釣區', deckX + 1, pierDeckY + 2.6, deckZ + 10, -0.15, 0.85)
+
+  const pathToDeck = mesh(
+    new THREE.BoxGeometry(4.5, 0.12, 38),
+    stdMat(brick, '#a8a29e', { repeat: [1, 7], roughness: 0.88 }),
+  )
+  pathToDeck.position.set(20, 0.38, 12)
+  parent.add(pathToDeck)
 
   const rockShore = mesh(
     new THREE.BoxGeometry(45, 3, 35),
@@ -187,9 +196,9 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   parking.position.set(70, 0.02, -78)
   parent.add(parking)
 
-  lampPost(parent, -38, 10, lampPositions)
-  lampPost(parent, -38, -2, lampPositions)
-  lampPost(parent, -38, 18, lampPositions)
+  lampPost(parent, deckX, deckZ + 8, lampPositions)
+  lampPost(parent, deckX, deckZ, lampPositions)
+  lampPost(parent, deckX, deckZ - 7, lampPositions)
 
   const spawnBoat = (x: number, z: number, len: number, rot: number) => {
     const g = new THREE.Group()
@@ -227,9 +236,9 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   parent.add(distantHill)
 
   const deckTopY = pierDeckY + 0.18
-  const shuaiPosition = new THREE.Vector3(-37.2, deckTopY, 9)
-  const grandpaPosition = new THREE.Vector3(-37.2, deckTopY, 3)
-  const pierFocus = new THREE.Vector3(-32, 0, 42)
+  const shuaiPosition = new THREE.Vector3(deckX - 0.6, deckTopY, deckZ + 5)
+  const grandpaPosition = new THREE.Vector3(deckX - 0.6, deckTopY, deckZ - 2)
+  const pierFocus = new THREE.Vector3(deckX + 4, 0, deckZ + 40)
 
   return {
     boats,
