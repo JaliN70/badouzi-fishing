@@ -103,13 +103,13 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
     new THREE.BoxGeometry(180, 14, 22),
     stdMat(basalt, '#1f2937', { repeat: [12, 2], roughness: 0.92 }),
   )
-  cliff.position.set(40, 6, 2)
+  cliff.position.set(40, 6, -24)
   parent.add(cliff)
   const cliffFace = mesh(
     new THREE.BoxGeometry(180, 16, 4),
     stdMat(basalt, '#111827', { repeat: [14, 1], roughness: 0.95 }),
   )
-  cliffFace.position.set(40, 5, 12)
+  cliffFace.position.set(40, 5, -12)
   parent.add(cliffFace)
 
   const skywalk = new THREE.Group()
@@ -176,7 +176,7 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
     new THREE.BoxGeometry(45, 3, 35),
     stdMat(basalt, '#374151', { repeat: [5, 3], roughness: 0.96 }),
   )
-  rockShore.position.set(-55, 0.8, 22)
+  rockShore.position.set(-42, 0.35, 36)
   parent.add(rockShore)
 
   const parking = mesh(
@@ -226,8 +226,9 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   distantHill.position.set(-30, 12, 200)
   parent.add(distantHill)
 
-  const shuaiPosition = new THREE.Vector3(-37, pierDeckY, 10)
-  const grandpaPosition = new THREE.Vector3(-39, pierDeckY, 5)
+  const deckTopY = pierDeckY + 0.18
+  const shuaiPosition = new THREE.Vector3(-37.2, deckTopY, 9)
+  const grandpaPosition = new THREE.Vector3(-37.2, deckTopY, 3)
   const pierFocus = new THREE.Vector3(-32, 0, 42)
 
   return {

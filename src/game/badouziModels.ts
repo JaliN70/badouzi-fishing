@@ -261,8 +261,9 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
   keelungIsle.position.set(-20, 6, 240)
   parent.add(keelungIsle)
 
-  const shuaiPosition = new THREE.Vector3(-57, pierDeckY, 16)
-  const grandpaPosition = new THREE.Vector3(-59, pierDeckY, 11)
+  const deckTopY = pierDeckY + 0.16
+  const shuaiPosition = new THREE.Vector3(-55.8, deckTopY, 17)
+  const grandpaPosition = new THREE.Vector3(-56.2, deckTopY, 11)
   const pierFocus = new THREE.Vector3(-48, 0, 38)
 
   return {

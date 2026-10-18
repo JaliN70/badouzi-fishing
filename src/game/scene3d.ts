@@ -31,14 +31,14 @@ export interface SceneVisualState {
 
 const PRESETS_BADOUZI: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
   overview: { pos: new THREE.Vector3(52, 78, -62), target: new THREE.Vector3(-38, 1.2, 30) },
-  pier: { pos: new THREE.Vector3(-63, 4.2, 18.5), target: new THREE.Vector3(-57, 2.4, 14) },
+  pier: { pos: new THREE.Vector3(-61, 4.2, 19), target: new THREE.Vector3(-55.8, 2.5, 14) },
   sea: { pos: new THREE.Vector3(-44, 10, 62), target: new THREE.Vector3(-48, 0.6, 38) },
   museum: { pos: new THREE.Vector3(98, 32, 8), target: new THREE.Vector3(168, 10, -28) },
 }
 
 const PRESETS_CHAOJING: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
   overview: { pos: new THREE.Vector3(55, 72, -58), target: new THREE.Vector3(15, 1.2, 28) },
-  pier: { pos: new THREE.Vector3(-43, 4.2, 12.5), target: new THREE.Vector3(-37, 2.4, 9) },
+  pier: { pos: new THREE.Vector3(-41, 4.2, 11), target: new THREE.Vector3(-37.2, 2.5, 7) },
   sea: { pos: new THREE.Vector3(-36, 11, 58), target: new THREE.Vector3(-32, 0.6, 42) },
   museum: { pos: new THREE.Vector3(62, 20, 32), target: new THREE.Vector3(48, 12, 22) },
 }
