@@ -20,7 +20,7 @@ function labelSprite(text: string, color: string): THREE.Sprite {
   return sprite
 }
 
-/** 爺爺：坐高約 1.05m，總高約 1.55m */
+/** 阿公：坐高約 1.05m，總高約 1.55m */
 export function buildGrandpaCharacter(): THREE.Group {
   const g = new THREE.Group()
   const skin = new THREE.MeshStandardMaterial({ color: '#fecaca', roughness: 0.72 })
@@ -47,7 +47,7 @@ export function buildGrandpaCharacter(): THREE.Group {
   bucket.position.set(0.32, 0.12, 0.22)
   g.add(bucket)
 
-  const tag = labelSprite('爺爺', '#fde68a')
+  const tag = labelSprite('阿公', '#fde68a')
   tag.position.y = 0.95
   g.add(tag)
   return g

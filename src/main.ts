@@ -72,8 +72,8 @@ app.innerHTML = `
 
     <div class="overlay" id="menu">
       <p class="overlay-kicker">基隆八斗子 · 漁港晨釣</p>
-      <h1 class="overlay-title">帥帥與爺爺<br/>釣魚記</h1>
-      <p class="overlay-sub">跟著爺爺在防波堤邊學釣魚：拋竿、看浮標、刺魚、收線。魚種參考八斗子近海常見的魚。</p>
+      <h1 class="overlay-title">帥帥與阿公<br/>釣魚記</h1>
+      <p class="overlay-sub">跟著阿公在防波堤邊學釣魚：拋竿、看浮標、刺魚、收線。魚種參考八斗子近海常見的魚。</p>
       <button type="button" class="btn-primary" id="btn-menu-start">開始故事</button>
       <p class="hint">釣魚按鈕在下方 · 遊戲中可開「調整視角」瀏覽 3D 場景</p>
     </div>
@@ -81,10 +81,10 @@ app.innerHTML = `
     <div class="overlay" id="intro" hidden>
       <h1 class="overlay-title overlay-title--sm">八斗子的早晨</h1>
       <p class="overlay-sub overlay-story">
-        帥帥提著小桶，跟在爺爺後面走上八斗子漁港旁的堤岸。遠處有船出港，海科館方向的海風帶著一點鹹味。
-        爺爺說：「今天不拼紀錄，先把基本功練好。」
+        帥帥提著小桶，跟在阿公後面走上八斗子漁港旁的堤岸。遠處有船出港，海科館方向的海風帶著一點鹹味。
+        阿公說：「今天不拼紀錄，先把基本功練好。」
       </p>
-      <button type="button" class="btn-primary" id="btn-intro-go">跟爺爺一起釣</button>
+      <button type="button" class="btn-primary" id="btn-intro-go">跟阿公一起釣</button>
     </div>
 
     <div class="overlay overlay--result" id="result" hidden>
@@ -175,7 +175,7 @@ function applyUi(state: GameUiState): void {
       emoji.textContent = state.lastCatch.species.emoji
       name.textContent = state.lastCatch.species.name
       weight.textContent = formatKg(state.lastCatch.kg)
-      msg.textContent = '帥帥把魚放進桶裡，爺爺點點頭。'
+      msg.textContent = '帥帥把魚放進桶裡，阿公點點頭。'
     } else {
       card.hidden = true
       msg.textContent = state.dialogueText

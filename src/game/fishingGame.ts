@@ -21,7 +21,7 @@ export interface SessionStats {
 
 export interface GameUiState {
   phase: FishingPhase
-  dialogueSpeaker: '爺爺' | '帥帥' | ''
+  dialogueSpeaker: '阿公' | '帥帥' | ''
   dialogueText: string
   castMeter: number
   castQuality: number
@@ -81,7 +81,7 @@ export class BadouziFishingGame {
   private pendingFish: { species: FishSpecies; kg: number } | null = null
   private lastCatch: { species: FishSpecies; kg: number } | null = null
   private resultSuccess = false
-  private dialogueSpeaker: '爺爺' | '帥帥' | '' = ''
+  private dialogueSpeaker: '阿公' | '帥帥' | '' = ''
   private dialogueText = ''
   private bobberPhase = 0
   private wavePhase = 0
@@ -93,7 +93,7 @@ export class BadouziFishingGame {
   }
 
   init(onReady?: () => void, onError?: (message: string) => void): void {
-    this.setDialogue('爺爺', '帥帥，今天爺爺帶你來八斗子漁港邊。準備好了就按開始。')
+    this.setDialogue('阿公', '帥帥，今天阿公帶你來八斗子漁港邊。準備好了就按開始。')
     this.emitUi()
     void this.scene3d.bootstrap().then(
       () => {
@@ -137,7 +137,7 @@ export class BadouziFishingGame {
   goIntro(): void {
     this.phase = 'intro'
     this.setDialogue(
-      '爺爺',
+      '阿公',
       '這裡是基隆八斗子，防波堤外就是船進出的水道。帥帥，先學會拋竿與看浮標。',
     )
     this.emitUi()
@@ -145,7 +145,7 @@ export class BadouziFishingGame {
 
   startFishing(): void {
     this.phase = 'idle'
-    this.setDialogue('帥帥', '好！我要釣一尾大的給爺爺看！')
+    this.setDialogue('帥帥', '好！我要釣一尾大的給阿公看！')
     this.resetCast()
     this.emitUi()
   }
@@ -155,7 +155,7 @@ export class BadouziFishingGame {
     this.phase = 'casting'
     this.castMeter = 0
     this.castDir = 1
-    this.setDialogue('爺爺', '指標在綠區時按「拋竿」，落點會比較準。')
+    this.setDialogue('阿公', '指標在綠區時按「拋竿」，落點會比較準。')
     this.emitUi()
   }
 
@@ -168,7 +168,7 @@ export class BadouziFishingGame {
     this.waitTime = 0
     this.waitTarget = 1.8 + Math.random() * 4.5
     this.bobberPhase = 0
-    this.setDialogue('爺爺', '浮標穩了，耐心等。八斗子的魚有時會慢半拍才咬。')
+    this.setDialogue('阿公', '浮標穩了，耐心等。八斗子的魚有時會慢半拍才咬。')
     this.emitUi()
   }
 
@@ -177,7 +177,7 @@ export class BadouziFishingGame {
     this.phase = 'reeling'
     this.reelProgress = 0
     this.tension = 25
-    this.setDialogue('帥帥', '中了！爺爺，幫我看一下！')
+    this.setDialogue('帥帥', '中了！阿公，幫我看一下！')
     this.emitUi()
   }
 
@@ -202,7 +202,7 @@ export class BadouziFishingGame {
     this.phase = 'idle'
     this.lastCatch = null
     this.pendingFish = null
-    this.setDialogue('爺爺', GRANDPA_TIPS[Math.floor(Math.random() * GRANDPA_TIPS.length)]!)
+    this.setDialogue('阿公', GRANDPA_TIPS[Math.floor(Math.random() * GRANDPA_TIPS.length)]!)
     this.emitUi()
   }
 
@@ -215,13 +215,13 @@ export class BadouziFishingGame {
       this.stats.totalKg = Math.round((this.stats.totalKg + this.pendingFish.kg) * 100) / 100
       if (this.pendingFish.kg > this.stats.bestKg) this.stats.bestKg = this.pendingFish.kg
       saveStats(this.stats)
-      this.setDialogue('爺爺', this.pendingFish.species.grandpaLine)
+      this.setDialogue('阿公', this.pendingFish.species.grandpaLine)
     } else if (missedHook) {
       this.lastCatch = null
-      this.setDialogue('爺爺', '慢了一點，魚把餌帶走了。沒關係，再拋一次。')
+      this.setDialogue('阿公', '慢了一點，魚把餌帶走了。沒關係，再拋一次。')
     } else {
       this.lastCatch = null
-      this.setDialogue('爺爺', '線太緊會斷，下次張一下、放一下。')
+      this.setDialogue('阿公', '線太緊會斷，下次張一下、放一下。')
     }
     this.pendingFish = null
     this.emitUi()
@@ -235,7 +235,7 @@ export class BadouziFishingGame {
     this.hookTimer = 0
   }
 
-  private setDialogue(speaker: '爺爺' | '帥帥', text: string): void {
+  private setDialogue(speaker: '阿公' | '帥帥', text: string): void {
     this.dialogueSpeaker = speaker
     this.dialogueText = text
   }
