@@ -93,7 +93,7 @@ export class BadouziScene3D {
     this.scene = new THREE.Scene()
     applyNightSky(this.scene, this.renderer)
     this.night = createNightLighting(this.scene)
-    this.pierWorkLight = new THREE.PointLight('#fef3c7', 1.6, 18, 1.5)
+    this.pierWorkLight = new THREE.PointLight('#ffffff', 3.5, 28, 1.35)
     this.pierWorkLight.position.set(0, 3, 0)
     this.scene.add(this.pierWorkLight)
 
@@ -204,7 +204,7 @@ export class BadouziScene3D {
 
     this.pierWorkLight.position
       .copy(env.shuaiPosition)
-      .add(new THREE.Vector3(0.8, 2.4, -0.6))
+      .add(new THREE.Vector3(0.8, 3.2, -0.6))
   }
 
   dispose(): void {
