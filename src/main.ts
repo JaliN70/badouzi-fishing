@@ -23,6 +23,19 @@ app.innerHTML = `
       </div>
     </header>
 
+    <div class="view-toolbar" id="view-toolbar" hidden>
+      <p class="view-ref">場景參考：八斗子漁港防波堤 · 海科館方向</p>
+      <div class="view-row">
+        <button type="button" class="btn-chip" id="btn-view-toggle" aria-pressed="false">調整視角</button>
+        <button type="button" class="btn-chip" data-preset="overview">俯瞰</button>
+        <button type="button" class="btn-chip" data-preset="pier">堤岸</button>
+        <button type="button" class="btn-chip" data-preset="sea">海面</button>
+        <button type="button" class="btn-chip" data-preset="museum">海科館</button>
+        <button type="button" class="btn-chip" id="btn-view-reset">重置</button>
+      </div>
+      <p class="view-hint" id="view-hint" hidden>單指旋轉 · 雙指縮放／平移</p>
+    </div>
+
     <div class="dialogue" id="dialogue" hidden>
       <span class="dialogue-speaker" id="speaker"></span>
       <p class="dialogue-text" id="dialogue-text"></p>
@@ -62,7 +75,7 @@ app.innerHTML = `
       <h1 class="overlay-title">帥帥與爺爺<br/>釣魚記</h1>
       <p class="overlay-sub">跟著爺爺在防波堤邊學釣魚：拋竿、看浮標、刺魚、收線。魚種參考八斗子近海常見的魚。</p>
       <button type="button" class="btn-primary" id="btn-menu-start">開始故事</button>
-      <p class="hint">單指操作 · 紀錄保存在本機</p>
+      <p class="hint">釣魚按鈕在下方 · 遊戲中可開「調整視角」瀏覽 3D 場景</p>
     </div>
 
     <div class="overlay" id="intro" hidden>
@@ -113,6 +126,7 @@ function setOverlays(phase: FishingPhase): void {
   const inGame = !['menu', 'intro', 'result'].includes(phase)
   dialogueEl.hidden = !inGame
   actionPanelEl.hidden = !inGame
+  document.querySelector<HTMLDivElement>('#view-toolbar')!.hidden = !inGame
 }
 
 function applyUi(state: GameUiState): void {
@@ -232,4 +246,27 @@ actionBtn.addEventListener('click', () => {
   else if (action === 'confirm-cast') game.confirmCast()
   else if (action === 'hook') game.hookFish()
   else if (action === 'reel') game.reelTap()
+})
+
+const viewToggle = document.querySelector<HTMLButtonElement>('#btn-view-toggle')!
+const viewHint = document.querySelector<HTMLParagraphElement>('#view-hint')!
+
+viewToggle.addEventListener('click', () => {
+  if (!game) return
+  const next = !game.isViewControlsEnabled()
+  game.setViewControls(next)
+  viewToggle.setAttribute('aria-pressed', String(next))
+  viewToggle.classList.toggle('btn-chip--active', next)
+  viewHint.hidden = !next
+})
+
+document.querySelector('#btn-view-reset')!.addEventListener('click', () => {
+  game?.resetCameraView()
+})
+
+document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const preset = btn.dataset.preset as 'overview' | 'pier' | 'sea' | 'museum'
+    game?.applyCameraPreset(preset)
+  })
 })

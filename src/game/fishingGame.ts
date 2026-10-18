@@ -1,5 +1,5 @@
 import { pickFish, type FishSpecies } from './fish.ts'
-import { BadouziScene3D } from './scene3d.ts'
+import { BadouziScene3D, type CameraPreset } from './scene3d.ts'
 
 const STORAGE_KEY = 'badouzi-fishing-stats'
 
@@ -106,6 +106,22 @@ export class BadouziFishingGame {
 
   getStats(): SessionStats {
     return { ...this.stats }
+  }
+
+  setViewControls(enabled: boolean): void {
+    this.scene3d.setControlsEnabled(enabled)
+  }
+
+  isViewControlsEnabled(): boolean {
+    return this.scene3d.isControlsEnabled()
+  }
+
+  resetCameraView(): void {
+    this.scene3d.resetCamera()
+  }
+
+  applyCameraPreset(preset: CameraPreset): void {
+    this.scene3d.applyCameraPreset(preset)
   }
 
   goIntro(): void {
@@ -236,15 +252,18 @@ export class BadouziFishingGame {
     const dt = Math.min((ts - this.lastTs) / 1000, 0.05)
     this.lastTs = ts
     this.update(dt)
-    this.scene3d.render({
-      phase: this.phase,
-      bobberPhase: this.bobberPhase,
-      wavePhase: this.wavePhase,
-      castQuality: this.castQuality,
-      castMeter: this.castMeter,
-      reelProgress: this.reelProgress,
-      tension: this.tension,
-    })
+    this.scene3d.render(
+      {
+        phase: this.phase,
+        bobberPhase: this.bobberPhase,
+        wavePhase: this.wavePhase,
+        castQuality: this.castQuality,
+        castMeter: this.castMeter,
+        reelProgress: this.reelProgress,
+        tension: this.tension,
+      },
+      dt,
+    )
     this.raf = requestAnimationFrame(this.loop)
   }
 
