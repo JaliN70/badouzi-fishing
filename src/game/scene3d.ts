@@ -77,9 +77,9 @@ export class BadouziScene3D {
     this.scene.background = new THREE.Color('#87ceeb')
     this.scene.fog = new THREE.Fog('#a8d4f0', 28, 55)
 
-    this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120)
-    this.camera.position.set(-6, 22, 14)
-    this.camera.lookAt(2, 0, 0)
+    this.camera = new THREE.PerspectiveCamera(38, 1, 0.1, 120)
+    this.camera.position.set(1, 28, 10)
+    this.camera.lookAt(2.5, 0, 0)
 
     const hemi = new THREE.HemisphereLight('#dff4ff', '#3d5c4a', 0.85)
     this.scene.add(hemi)
