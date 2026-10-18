@@ -1,5 +1,11 @@
 import { pickFish, type FishSpecies } from './fish.ts'
 import { getDexProgress, recordDexCatch } from './fishDex.ts'
+import {
+  FISHING_SPOTS,
+  loadSavedSpot,
+  saveSpot,
+  type FishingSpotId,
+} from './fishingSpot.ts'
 import { BadouziScene3D, type CameraPreset } from './scene3d.ts'
 
 const STORAGE_KEY = 'badouzi-fishing-stats'
@@ -38,6 +44,9 @@ export interface GameUiState {
   resultNewDex: boolean
   resultSpeciesRecord: boolean
   resultGlobalRecord: boolean
+  spotId: FishingSpotId
+  viewRef: string
+  museumPresetLabel: string
 }
 
 function loadStats(): SessionStats {
@@ -59,11 +68,11 @@ function saveStats(stats: SessionStats): void {
 }
 
 const GRANDPA_TIPS = [
-  '帥帥，八斗子早上風小，線拋穩一點就好。',
+  '帥帥，夜裡風大時線要拋穩，燈別直射水面嚇魚。',
   '看浮標，只有猛沉下去那一下才刺。',
   '魚在掙扎時別硬拉，張一下、放一下。',
-  '後面就是國立海洋科技博物館，海流從這裡轉進來。',
-  '記得，釣完要把垃圾帶走，港邊才會一直漂亮。',
+  '潮境這邊浪聲大，更要專心看浮標。',
+  '記得，釣完要把垃圾帶走，海邊才會一直漂亮。',
 ]
 
 export class BadouziFishingGame {
@@ -93,15 +102,31 @@ export class BadouziFishingGame {
   private resultNewDex = false
   private resultSpeciesRecord = false
   private resultGlobalRecord = false
+  private spotId: FishingSpotId = loadSavedSpot()
   private onUi: (state: GameUiState) => void
 
   constructor(canvas: HTMLCanvasElement, onUi: (state: GameUiState) => void) {
     this.onUi = onUi
-    this.scene3d = new BadouziScene3D(canvas)
+    this.scene3d = new BadouziScene3D(canvas, this.spotId)
+  }
+
+  getSpotId(): FishingSpotId {
+    return this.spotId
+  }
+
+  selectSpot(spotId: FishingSpotId): void {
+    if (this.phase !== 'menu') return
+    this.spotId = spotId
+    saveSpot(spotId)
+    this.scene3d.setSpot(spotId)
+    const spot = FISHING_SPOTS[spotId]
+    this.setDialogue('阿公', `帥帥，今晚我們在${spot.shortLabel}夜釣。準備好了就按開始。`)
+    this.emitUi()
   }
 
   init(onReady?: () => void, onError?: (message: string) => void): void {
-    this.setDialogue('阿公', '帥帥，今天阿公帶你來八斗子漁港邊。準備好了就按開始。')
+    const spot = FISHING_SPOTS[this.spotId]
+    this.setDialogue('阿公', `帥帥，今晚我們在${spot.shortLabel}夜釣。準備好了就按開始。`)
     this.emitUi()
     void this.scene3d.bootstrap().then(
       () => {
@@ -144,10 +169,8 @@ export class BadouziFishingGame {
 
   goIntro(): void {
     this.phase = 'intro'
-    this.setDialogue(
-      '阿公',
-      '這裡是基隆八斗子，防波堤外就是船進出的水道。帥帥，先學會拋竿與看浮標。',
-    )
+    const spot = FISHING_SPOTS[this.spotId]
+    this.setDialogue('阿公', `${spot.sceneTitle}夜風大，帥帥先學會拋竿與看浮標。`)
     this.emitUi()
   }
 
@@ -176,7 +199,7 @@ export class BadouziFishingGame {
     this.waitTime = 0
     this.waitTarget = 1.8 + Math.random() * 4.5
     this.bobberPhase = 0
-    this.setDialogue('阿公', '浮標穩了，耐心等。八斗子的魚有時會慢半拍才咬。')
+    this.setDialogue('阿公', '浮標穩了，耐心等。這裡的魚有時會慢半拍才咬。')
     this.emitUi()
   }
 
@@ -277,6 +300,9 @@ export class BadouziFishingGame {
       resultNewDex: this.resultNewDex,
       resultSpeciesRecord: this.resultSpeciesRecord,
       resultGlobalRecord: this.resultGlobalRecord,
+      spotId: this.spotId,
+      viewRef: this.scene3d.getViewRefLabel(),
+      museumPresetLabel: this.scene3d.getMuseumPresetLabel(),
     })
   }
 

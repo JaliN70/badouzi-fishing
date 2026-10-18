@@ -1,4 +1,4 @@
-export type HarborSpot = '八斗子' | '碧砂'
+export type HarborSpot = '八斗子' | '碧砂' | '潮境公園'
 
 export interface FishSpecies {
   id: string
@@ -14,7 +14,7 @@ export interface FishSpecies {
   grandpaLine: string
 }
 
-/** 八斗子、碧砂漁港近海常見魚種（遊戲用簡化） */
+/** 八斗子、碧砂、潮境公園近海常見魚種（遊戲用簡化） */
 export const FISH_TABLE: FishSpecies[] = [
   {
     id: 'sand-borer',
@@ -34,8 +34,8 @@ export const FISH_TABLE: FishSpecies[] = [
     minKg: 0.08,
     maxKg: 0.35,
     rarity: 0.16,
-    harborSpots: ['八斗子', '碧砂'],
-    dexNote: '北部漁港最熟悉的雜魚之一，群游、咬餌快，帶小朋友常連竿。',
+    harborSpots: ['八斗子', '碧砂', '潮境公園'],
+    dexNote: '北部漁港最熟悉的雜魚之一，潮境夜釣也常連竿。',
     grandpaLine: '斑馬姑又來排隊了，帥帥記得竿尖別抬太高。',
   },
   {
@@ -56,8 +56,8 @@ export const FISH_TABLE: FishSpecies[] = [
     minKg: 0.02,
     maxKg: 0.12,
     rarity: 0.1,
-    harborSpots: ['八斗子', '碧砂'],
-    dexNote: '棲息潮間與礫底，體型小但咬餌積極，是入門常釣對象。',
+    harborSpots: ['八斗子', '碧砂', '潮境公園'],
+    dexNote: '棲息潮間與礫底，潮境平台與兩港岸邊都常見。',
     grandpaLine: '別小看蝦虎魚，八斗子岸邊常常一竿好幾尾。',
   },
   {
@@ -67,8 +67,8 @@ export const FISH_TABLE: FishSpecies[] = [
     minKg: 0.15,
     maxKg: 0.55,
     rarity: 0.09,
-    harborSpots: ['八斗子', '碧砂'],
-    dexNote: '礁岩與消波塊縫隙常見，拉力紮實，是港邊實力魚。',
+    harborSpots: ['八斗子', '碧砂', '潮境公園'],
+    dexNote: '礁岩與潮境礫石縫隙常見，夜釣拉力紮實。',
     grandpaLine: '花身鯻愛鑽縫，快收一段線，別讓牠磨斷。',
   },
   {
@@ -78,8 +78,8 @@ export const FISH_TABLE: FishSpecies[] = [
     minKg: 0.2,
     maxKg: 0.85,
     rarity: 0.085,
-    harborSpots: ['八斗子', '碧砂'],
-    dexNote: '兩港消波塊與碼頭邊都能遇到，體型不大但表現穩定。',
+    harborSpots: ['八斗子', '碧砂', '潮境公園'],
+    dexNote: '消波塊與潮境釣魚平台邊都能遇到，夜釣表現穩定。',
     grandpaLine: '黃鰭鯛皮亮，代表水色不錯，今天有戲。',
   },
   {
@@ -89,8 +89,8 @@ export const FISH_TABLE: FishSpecies[] = [
     minKg: 0.25,
     maxKg: 1.2,
     rarity: 0.075,
-    harborSpots: ['八斗子', '碧砂'],
-    dexNote: '港池與內灣常見，夜釣與放流都常見的經典目標。',
+    harborSpots: ['八斗子', '碧砂', '潮境公園'],
+    dexNote: '港池與潮境礫岸常見，夜釣經典目標。',
     grandpaLine: '臭肚上來了，別被牠突然側游嚇到。',
   },
   {
@@ -188,8 +188,8 @@ export const FISH_TABLE: FishSpecies[] = [
     minKg: 0.15,
     maxKg: 0.55,
     rarity: 0.025,
-    harborSpots: ['八斗子', '碧砂'],
-    dexNote: '曙暮光與夜間兩港近海都可能有頭足類驚喜。',
+    harborSpots: ['八斗子', '碧砂', '潮境公園'],
+    dexNote: '夜間潮境與兩港近海都可能有頭足類驚喜。',
     grandpaLine: '小管！晚上回去白灼就對了，海科館那邊也常有人討論這個。',
   },
   {

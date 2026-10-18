@@ -1,11 +1,20 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { buildModeledBadouziHarbor } from './badouziModels.ts'
+import { buildFishingEnvironment } from './environmentBuild.ts'
+import type { HarborLayout } from './harborLayout.ts'
 import {
   SHUAI_ROD_TIP,
   buildGrandpaCharacter,
   buildShuaiShuaiCharacter,
 } from './characters.ts'
+import { FISHING_SPOTS, type FishingSpotId } from './fishingSpot.ts'
+import {
+  applyNightSky,
+  createNightLighting,
+  setWaterNightLook,
+  syncParkLamps,
+  type NightLightingHandles,
+} from './sceneNight.ts'
 
 export type CameraPreset = 'overview' | 'pier' | 'sea' | 'museum'
 
@@ -19,11 +28,18 @@ export interface SceneVisualState {
   tension: number
 }
 
-const PRESETS: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
+const PRESETS_BADOUZI: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
   overview: { pos: new THREE.Vector3(52, 78, -62), target: new THREE.Vector3(-38, 1.2, 30) },
   pier: { pos: new THREE.Vector3(-70, 6, 26), target: new THREE.Vector3(-52, 1.2, 34) },
   sea: { pos: new THREE.Vector3(-44, 10, 62), target: new THREE.Vector3(-48, 0.6, 38) },
   museum: { pos: new THREE.Vector3(98, 32, 8), target: new THREE.Vector3(168, 10, -28) },
+}
+
+const PRESETS_CHAOJING: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
+  overview: { pos: new THREE.Vector3(55, 72, -58), target: new THREE.Vector3(15, 1.2, 28) },
+  pier: { pos: new THREE.Vector3(-52, 6.5, 18), target: new THREE.Vector3(-32, 1.2, 38) },
+  sea: { pos: new THREE.Vector3(-36, 11, 58), target: new THREE.Vector3(-32, 0.6, 42) },
+  museum: { pos: new THREE.Vector3(62, 20, 32), target: new THREE.Vector3(48, 12, 22) },
 }
 
 export class BadouziScene3D {
@@ -32,7 +48,8 @@ export class BadouziScene3D {
   private scene: THREE.Scene
   private camera: THREE.PerspectiveCamera
   private controls: OrbitControls
-  private sun: THREE.DirectionalLight
+  private night!: NightLightingHandles
+  private envRoot = new THREE.Group()
   private water!: THREE.Mesh
   private waterBaseY!: Float32Array
   private shuaiGroup!: THREE.Group
@@ -53,11 +70,15 @@ export class BadouziScene3D {
   private targetFrom = new THREE.Vector3()
   private targetTo = new THREE.Vector3()
   private cameraT = 1
+  private spotId: FishingSpotId = 'badouzi'
+  private presets = PRESETS_BADOUZI
+  private pointLights: THREE.PointLight[] = []
 
   private readonly rodTip = SHUAI_ROD_TIP.clone()
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, spotId: FishingSpotId = 'badouzi') {
     this.canvas = canvas
+    this.spotId = spotId
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -67,53 +88,58 @@ export class BadouziScene3D {
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 1.08
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color('#93c5fd')
-    this.scene.fog = new THREE.FogExp2('#bfdbfe', 0.0032)
+    applyNightSky(this.scene, this.renderer)
+    this.night = createNightLighting(this.scene)
 
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.5, 420)
-    this.camera.position.copy(PRESETS.overview.pos)
+    this.presets = spotId === 'chaojing' ? PRESETS_CHAOJING : PRESETS_BADOUZI
+    this.camera.position.copy(this.presets.overview.pos)
 
     this.controls = new OrbitControls(this.camera, canvas)
     this.controls.enabled = false
     this.controls.enableDamping = true
     this.controls.dampingFactor = 0.06
-    this.controls.target.copy(PRESETS.overview.target)
+    this.controls.target.copy(this.presets.overview.target)
     this.controls.minDistance = 4
     this.controls.maxDistance = 140
     this.controls.minPolarAngle = 0.1
     this.controls.maxPolarAngle = Math.PI * 0.48
 
-    const hemi = new THREE.HemisphereLight('#e0f2fe', '#334155', 0.85)
-    this.scene.add(hemi)
-
-    this.sun = new THREE.DirectionalLight('#fff7ed', 1.3)
-    this.sun.position.set(-45, 65, 25)
-    this.sun.castShadow = true
-    this.sun.shadow.mapSize.set(2048, 2048)
-    this.sun.shadow.camera.near = 4
-    this.sun.shadow.camera.far = 320
-    this.sun.shadow.camera.left = -120
-    this.sun.shadow.camera.right = 200
-    this.sun.shadow.camera.top = 120
-    this.sun.shadow.camera.bottom = -120
-    this.sun.shadow.bias = -0.00035
-    this.scene.add(this.sun)
+    this.scene.add(this.envRoot)
 
     this.lineGeo = new THREE.BufferGeometry()
     this.fishingLine = new THREE.Line(
       this.lineGeo,
-      new THREE.LineBasicMaterial({ color: 0xf8fafc, transparent: true, opacity: 0.9 }),
+      new THREE.LineBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.85 }),
     )
 
-    this.setupScene()
+    this.grandpaGroup = buildGrandpaCharacter()
+    this.scene.add(this.grandpaGroup)
+    this.shuaiGroup = buildShuaiShuaiCharacter()
+    this.scene.add(this.shuaiGroup)
+    this.bobber = this.buildBobber()
+    this.scene.add(this.fishingLine)
+
+    this.loadEnvironment()
 
     this.resizeObs = new ResizeObserver(() => this.resize())
     this.resizeObs.observe(canvas)
     this.resize()
+  }
+
+  getSpotId(): FishingSpotId {
+    return this.spotId
+  }
+
+  setSpot(spotId: FishingSpotId): void {
+    if (this.spotId === spotId) return
+    this.spotId = spotId
+    this.presets = spotId === 'chaojing' ? PRESETS_CHAOJING : PRESETS_BADOUZI
+    this.clearEnvironment()
+    this.loadEnvironment()
+    this.resetCamera()
   }
 
   bootstrap(): Promise<void> {
@@ -124,8 +150,30 @@ export class BadouziScene3D {
     return this.sceneReady
   }
 
-  private setupScene(): void {
-    const env = buildModeledBadouziHarbor(this.scene)
+  private clearEnvironment(): void {
+    while (this.envRoot.children.length > 0) {
+      const child = this.envRoot.children[0]!
+      this.envRoot.remove(child)
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose()
+        const mat = child.material
+        if (Array.isArray(mat)) mat.forEach((m) => m.dispose())
+        else mat.dispose()
+      }
+    }
+    this.boats = []
+    this.pointLights = syncParkLamps(this.night.lampGroup, [], this.pointLights)
+  }
+
+  private loadEnvironment(): void {
+    const env = buildFishingEnvironment(this.spotId, this.envRoot)
+    this.applyLayout(env)
+    this.bobber.visible = false
+    this.fishingLine.visible = false
+    this.sceneReady = true
+  }
+
+  private applyLayout(env: HarborLayout): void {
     this.boats = env.boats
     this.water = env.waterSurface
     this.pierFocus.copy(env.pierFocus)
@@ -133,10 +181,7 @@ export class BadouziScene3D {
     this.castFacingY = Math.atan2(env.castDirection.x, env.castDirection.z)
     this.controls.target.copy(this.pierFocus.clone().setY(1.2))
 
-    PRESETS.overview.target.set(-38, 1.2, 30)
-    PRESETS.pier.target.copy(env.pierFocus).setY(1.2)
-    PRESETS.sea.target.copy(this.pierFocus)
-    PRESETS.museum.target.set(168, 10, -28)
+    this.pointLights = syncParkLamps(this.night.lampGroup, env.lampPositions, this.pointLights)
 
     const posAttr = this.water.geometry.attributes.position
     this.waterBaseY = new Float32Array(posAttr.count)
@@ -144,21 +189,14 @@ export class BadouziScene3D {
       this.waterBaseY[i] = posAttr.getY(i)
     }
 
-    this.grandpaGroup = buildGrandpaCharacter()
-    this.grandpaGroup.position.copy(env.grandpaPosition)
-    this.grandpaGroup.rotation.y = this.castFacingY + 0.12
-    this.scene.add(this.grandpaGroup)
-
-    this.shuaiGroup = buildShuaiShuaiCharacter()
-    this.shuaiGroup.position.copy(env.shuaiPosition)
-    this.shuaiGroup.rotation.y = this.castFacingY
-    this.scene.add(this.shuaiGroup)
-
-    this.bobber = this.buildBobber()
-    this.scene.add(this.fishingLine)
-    this.bobber.visible = false
-    this.fishingLine.visible = false
-    this.sceneReady = true
+    if (this.grandpaGroup) {
+      this.grandpaGroup.position.copy(env.grandpaPosition)
+      this.grandpaGroup.rotation.y = this.castFacingY + 0.12
+    }
+    if (this.shuaiGroup) {
+      this.shuaiGroup.position.copy(env.shuaiPosition)
+      this.shuaiGroup.rotation.y = this.castFacingY
+    }
   }
 
   dispose(): void {
@@ -178,7 +216,7 @@ export class BadouziScene3D {
   }
 
   applyCameraPreset(preset: CameraPreset): void {
-    const p = PRESETS[preset]
+    const p = this.presets[preset]
     this.cameraFrom.copy(this.camera.position)
     this.targetFrom.copy(this.controls.target)
     this.cameraTo.copy(p.pos)
@@ -189,6 +227,14 @@ export class BadouziScene3D {
 
   resetCamera(): void {
     this.applyCameraPreset('overview')
+  }
+
+  getViewRefLabel(): string {
+    return FISHING_SPOTS[this.spotId].viewRef
+  }
+
+  getMuseumPresetLabel(): string {
+    return this.spotId === 'chaojing' ? '海與空' : '海科館'
   }
 
   resize(): void {
@@ -221,9 +267,7 @@ export class BadouziScene3D {
     const fishing = ['waiting', 'bite', 'reeling'].includes(phase)
 
     this.animateWater(wavePhase)
-
-    const waterMat = this.water.material as THREE.MeshStandardMaterial
-    waterMat.emissiveIntensity = 0.08 + Math.sin(wavePhase * 2) * 0.03
+    setWaterNightLook(this.water, wavePhase)
 
     for (let i = 0; i < this.boats.length; i++) {
       const boat = this.boats[i]!
@@ -299,7 +343,7 @@ export class BadouziScene3D {
       new THREE.MeshStandardMaterial({
         color: '#ef4444',
         emissive: '#7f1d1d',
-        emissiveIntensity: 0.35,
+        emissiveIntensity: 0.55,
         roughness: 0.35,
       }),
     )

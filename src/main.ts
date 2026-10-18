@@ -10,20 +10,21 @@ import {
   harborLabel,
   rarityLabel,
 } from './game/fishDex.ts'
+import { FISHING_SPOTS, type FishingSpotId } from './game/fishingSpot.ts'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
   <div class="game-shell">
     <div class="loading" id="loading">
       <div class="spinner" aria-hidden="true"></div>
-      <span id="loading-text">載入八斗子 3D 場景…</span>
+      <span id="loading-text">載入基隆夜釣 3D 場景…</span>
     </div>
     <div class="error-banner" id="error" hidden></div>
-    <canvas class="game-canvas" id="canvas" aria-label="基隆八斗子俯視3D釣魚場景"></canvas>
+    <canvas class="game-canvas" id="canvas" aria-label="基隆夜釣 3D 場景"></canvas>
 
     <header class="hud" id="hud">
       <div class="hud-block">
-        <span class="hud-label">基隆 · 八斗子</span>
+        <span class="hud-label" id="hud-spot-label">基隆 · 八斗子</span>
         <span class="hud-value hud-value--small" id="catch-count">0 尾</span>
       </div>
       <button type="button" class="btn-dex-fab" id="btn-dex" aria-label="魚類圖鑑">
@@ -37,13 +38,13 @@ app.innerHTML = `
     </header>
 
     <div class="view-toolbar" id="view-toolbar" hidden>
-      <p class="view-ref">實比例模型：1 單位 = 1 公尺 · 八斗子漁港／海科館配置參考</p>
+      <p class="view-ref" id="view-ref">實比例 1m · 場景配置參考</p>
       <div class="view-row">
         <button type="button" class="btn-chip" id="btn-view-toggle" aria-pressed="false">調整視角</button>
         <button type="button" class="btn-chip" data-preset="overview">俯瞰</button>
         <button type="button" class="btn-chip" data-preset="pier">堤岸</button>
         <button type="button" class="btn-chip" data-preset="sea">海面</button>
-        <button type="button" class="btn-chip" data-preset="museum">海科館</button>
+        <button type="button" class="btn-chip" data-preset="museum" id="btn-preset-landmark">海科館</button>
         <button type="button" class="btn-chip" id="btn-view-reset">重置</button>
       </div>
       <p class="view-hint" id="view-hint" hidden>單指旋轉 · 雙指縮放／平移</p>
@@ -84,20 +85,27 @@ app.innerHTML = `
     </div>
 
     <div class="overlay" id="menu">
-      <p class="overlay-kicker">基隆八斗子 · 漁港晨釣</p>
+      <p class="overlay-kicker">基隆海邊 · 夜釣</p>
       <h1 class="overlay-title">帥帥與阿公<br/>釣魚記</h1>
-      <p class="overlay-sub">跟著阿公在防波堤邊學釣魚：拋竿、看浮標、刺魚、收線。魚種參考八斗子、碧砂漁港近海常見的魚。</p>
+      <p class="overlay-sub">選擇釣點，跟阿公在夜裡學拋竿、看浮標、刺魚、收線。場景依實地比例建模，並附材質貼圖方便辨識。</p>
+      <div class="spot-picker" role="group" aria-label="選擇釣點">
+        <button type="button" class="spot-card spot-card--active" data-spot="badouzi" id="spot-badouzi">
+          <span class="spot-card__title">八斗子突堤</span>
+          <span class="spot-card__desc">漁港防波堤 · 北寧路 · 海科館</span>
+        </button>
+        <button type="button" class="spot-card" data-spot="chaojing" id="spot-chaojing">
+          <span class="spot-card__title">潮境公園</span>
+          <span class="spot-card__desc">海與空長廊 · 燈塔 · 釣魚平台</span>
+        </button>
+      </div>
       <button type="button" class="btn-primary" id="btn-menu-start">開始故事</button>
       <button type="button" class="btn-dex-link" id="btn-dex-menu">魚類圖鑑 · <span id="dex-progress-menu">0/0</span></button>
       <p class="hint">釣魚按鈕在下方 · 遊戲中可開「調整視角」瀏覽 3D 場景</p>
     </div>
 
     <div class="overlay" id="intro" hidden>
-      <h1 class="overlay-title overlay-title--sm">八斗子的早晨</h1>
-      <p class="overlay-sub overlay-story">
-        帥帥提著小桶，跟在阿公後面走上八斗子漁港旁的堤岸。遠處有船出港，海科館方向的海風帶著一點鹹味。
-        阿公說：「今天不拼紀錄，先把基本功練好。」
-      </p>
+      <h1 class="overlay-title overlay-title--sm" id="intro-title">夜釣</h1>
+      <p class="overlay-sub overlay-story" id="intro-story"></p>
       <button type="button" class="btn-primary" id="btn-intro-go">跟阿公一起釣</button>
     </div>
 
@@ -121,7 +129,7 @@ app.innerHTML = `
           <p class="dex-summary" id="dex-summary">已收集 0 / 0 種</p>
           <p class="dex-record-global" id="dex-record-global">最大釣獲紀錄：尚無</p>
           <ol class="dex-record-list" id="dex-record-list" hidden></ol>
-          <p class="dex-hint">八斗子、碧砂漁港魚種 · 成功釣起後自動登錄 · 本機保存</p>
+          <p class="dex-hint">八斗子 · 碧砂 · 潮境公園魚種 · 成功釣起後自動登錄</p>
         </header>
         <div class="dex-grid" id="dex-grid"></div>
         <button type="button" class="btn-primary" id="btn-dex-close">關閉</button>
@@ -152,6 +160,26 @@ const dexRecordListEl = document.querySelector<HTMLOListElement>('#dex-record-li
 const dexProgressEl = document.querySelector<HTMLSpanElement>('#dex-progress')!
 const dexProgressMenuEl = document.querySelector<HTMLSpanElement>('#dex-progress-menu')!
 const hudEl = document.querySelector<HTMLElement>('#hud')!
+const hudSpotLabelEl = document.querySelector<HTMLSpanElement>('#hud-spot-label')!
+const viewRefEl = document.querySelector<HTMLParagraphElement>('#view-ref')!
+const introTitleEl = document.querySelector<HTMLHeadingElement>('#intro-title')!
+const introStoryEl = document.querySelector<HTMLParagraphElement>('#intro-story')!
+const landmarkPresetBtn = document.querySelector<HTMLButtonElement>('#btn-preset-landmark')!
+
+function syncSpotPicker(spotId: FishingSpotId): void {
+  document.querySelectorAll<HTMLButtonElement>('.spot-card').forEach((btn) => {
+    const active = btn.dataset.spot === spotId
+    btn.classList.toggle('spot-card--active', active)
+    btn.setAttribute('aria-pressed', String(active))
+  })
+}
+
+function applySpotCopy(spotId: FishingSpotId): void {
+  const spot = FISHING_SPOTS[spotId]
+  hudSpotLabelEl.textContent = spot.hudLabel
+  introTitleEl.textContent = spot.introTitle
+  introStoryEl.textContent = spot.introStory
+}
 
 function formatDexProgressText(progress: { unlocked: number; total: number }): string {
   return `${progress.unlocked}/${progress.total}`
@@ -249,6 +277,11 @@ function setOverlays(phase: FishingPhase): void {
 
 function applyUi(state: GameUiState): void {
   setOverlays(state.phase)
+
+  syncSpotPicker(state.spotId)
+  applySpotCopy(state.spotId)
+  viewRefEl.textContent = state.viewRef
+  landmarkPresetBtn.textContent = state.museumPresetLabel
 
   catchCountEl.textContent = `${state.stats.totalCatch} 尾`
   dexProgressEl.textContent = formatDexProgressText(state.dexProgress)
@@ -365,6 +398,13 @@ try {
   loadingEl.hidden = true
   showError(e instanceof Error ? e.message : '遊戲初始化失敗，請重新整理頁面')
 }
+
+document.querySelectorAll<HTMLButtonElement>('.spot-card').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const spot = btn.dataset.spot as FishingSpotId
+    if (spot) game.selectSpot(spot)
+  })
+})
 
 document.querySelector('#btn-menu-start')!.addEventListener('click', () => {
   game.goIntro()
