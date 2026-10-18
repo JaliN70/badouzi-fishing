@@ -92,11 +92,19 @@ export class BadouziFishingGame {
     this.scene3d = new BadouziScene3D(canvas)
   }
 
-  init(): void {
+  init(onReady?: () => void, onError?: (message: string) => void): void {
     this.setDialogue('爺爺', '帥帥，今天爺爺帶你來八斗子漁港邊。準備好了就按開始。')
     this.emitUi()
-    this.lastTs = performance.now()
-    this.loop(this.lastTs)
+    this.scene3d
+      .bootstrap()
+      .then(() => {
+        onReady?.()
+        this.lastTs = performance.now()
+        this.loop(this.lastTs)
+      })
+      .catch((e: unknown) => {
+        onError?.(e instanceof Error ? e.message : '場景載入失敗')
+      })
   }
 
   destroy(): void {
@@ -249,6 +257,7 @@ export class BadouziFishingGame {
   }
 
   private loop = (ts: number): void => {
+    if (!this.scene3d.isReady()) return
     const dt = Math.min((ts - this.lastTs) / 1000, 0.05)
     this.lastTs = ts
     this.update(dt)

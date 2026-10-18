@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { buildBadouziEnvironment } from './badouziEnvironment.ts'
+import { buildRealWorldOverlay } from './badouziEnvironment.ts'
+import { BADOUZI_HARBOR, createRealWorldGround } from './realWorldGround.ts'
 
 export type CameraPreset = 'overview' | 'pier' | 'sea' | 'museum'
 
@@ -15,10 +16,10 @@ export interface SceneVisualState {
 }
 
 const PRESETS: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
-  overview: { pos: new THREE.Vector3(2, 26, 14), target: new THREE.Vector3(2, 0, 0) },
-  pier: { pos: new THREE.Vector3(-4, 6, 8), target: new THREE.Vector3(-2, 0.5, 0) },
-  sea: { pos: new THREE.Vector3(14, 8, -6), target: new THREE.Vector3(4, 0, 0) },
-  museum: { pos: new THREE.Vector3(-8, 12, 12), target: new THREE.Vector3(-10, 1, 6) },
+  overview: { pos: new THREE.Vector3(0, 42, 32), target: new THREE.Vector3(0, 0, 0) },
+  pier: { pos: new THREE.Vector3(-6, 8, 10), target: new THREE.Vector3(-2, 0.5, 0) },
+  sea: { pos: new THREE.Vector3(18, 10, -4), target: new THREE.Vector3(6, 0, 2) },
+  museum: { pos: new THREE.Vector3(-12, 14, 16), target: new THREE.Vector3(-8, 2, 8) },
 }
 
 function labelSprite(text: string, color = '#ffffff', bg = 'rgba(15, 23, 42, 0.75)'): THREE.Sprite {
@@ -60,7 +61,10 @@ export class BadouziScene3D {
   private boats: THREE.Group[] = []
   private resizeObs: ResizeObserver
   private controlsEnabled = false
-  private pierFocus = new THREE.Vector3(1.5, 0, 0.5)
+  private pierFocus = new THREE.Vector3(0, 0, 0)
+  private seaCastDir = new THREE.Vector3(0.92, 0, 0.38)
+  private bootstrapPromise: Promise<void> | null = null
+  private sceneReady = false
   private animatingCamera = false
   private cameraFrom = new THREE.Vector3()
   private cameraTo = new THREE.Vector3()
@@ -85,8 +89,8 @@ export class BadouziScene3D {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color('#8ecae6')
-    this.scene.fog = new THREE.FogExp2('#b8d9ee', 0.018)
+    this.scene.background = new THREE.Color('#dbeafe')
+    this.scene.fog = new THREE.FogExp2('#e2e8f0', 0.008)
 
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160)
     this.camera.position.copy(PRESETS.overview.pos)
@@ -103,8 +107,8 @@ export class BadouziScene3D {
     const hemi = new THREE.HemisphereLight('#e0f2fe', '#3f4f3a', 0.9)
     this.scene.add(hemi)
 
-    this.sun = new THREE.DirectionalLight('#fff4e0', 1.25)
-    this.sun.position.set(-12, 22, 8)
+    this.sun = new THREE.DirectionalLight('#fff7ed', 1.35)
+    this.sun.position.set(-18, 28, 12)
     this.sun.castShadow = true
     this.sun.shadow.mapSize.set(2048, 2048)
     this.sun.shadow.camera.near = 2
@@ -116,10 +120,49 @@ export class BadouziScene3D {
     this.sun.shadow.bias = -0.0004
     this.scene.add(this.sun)
 
-    const env = buildBadouziEnvironment(this.scene)
+    this.water = new THREE.Mesh()
+    this.waterBaseY = new Float32Array(0)
+    this.grandpaGroup = new THREE.Group()
+    this.shuaiGroup = new THREE.Group()
+    this.bobber = new THREE.Group()
+    this.lineGeo = new THREE.BufferGeometry()
+    this.fishingLine = new THREE.Line(
+      this.lineGeo,
+      new THREE.LineBasicMaterial({ color: 0xf8fafc, transparent: true, opacity: 0.92 }),
+    )
+
+    this.resizeObs = new ResizeObserver(() => this.resize())
+    this.resizeObs.observe(canvas)
+    this.resize()
+  }
+
+  bootstrap(): Promise<void> {
+    if (!this.bootstrapPromise) {
+      this.bootstrapPromise = this.loadRealWorldScene()
+    }
+    return this.bootstrapPromise
+  }
+
+  isReady(): boolean {
+    return this.sceneReady
+  }
+
+  private async loadRealWorldScene(): Promise<void> {
+    const ground = await createRealWorldGround(BADOUZI_HARBOR.lat, BADOUZI_HARBOR.lon, 17, 2)
+    this.scene.add(ground.mesh)
+
+    const env = await buildRealWorldOverlay(this.scene, ground.metersPerUnit)
     this.boats = env.boats
     this.water = env.waterSurface
     this.pierFocus.copy(env.pierFocus)
+    PRESETS.overview.target.copy(this.pierFocus)
+    PRESETS.pier.target.copy(env.shuaiPosition)
+    PRESETS.sea.target.copy(this.pierFocus).add(new THREE.Vector3(8, 0, 3))
+    PRESETS.museum.target.set(
+      env.shuaiPosition.x - 6,
+      1,
+      env.shuaiPosition.z + 10,
+    )
     this.controls.target.copy(this.pierFocus)
 
     const posAttr = this.water.geometry.attributes.position
@@ -129,19 +172,17 @@ export class BadouziScene3D {
     }
 
     this.grandpaGroup = this.buildGrandpa()
-    this.shuaiGroup = this.buildShuaiShuai()
-    this.bobber = this.buildBobber()
-    this.lineGeo = new THREE.BufferGeometry()
-    const lineMat = new THREE.LineBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.9 })
-    this.fishingLine = new THREE.Line(this.lineGeo, lineMat)
-    this.scene.add(this.fishingLine)
+    this.grandpaGroup.position.set(env.grandpaPosition.x, 0.35, env.grandpaPosition.z)
 
+    this.shuaiGroup = this.buildShuaiShuai()
+    this.shuaiGroup.position.set(env.shuaiPosition.x, 0.35, env.shuaiPosition.z)
+    this.shuaiGroup.rotation.y = Math.PI / 2 - 0.25
+
+    this.bobber = this.buildBobber()
+    this.scene.add(this.fishingLine)
     this.bobber.visible = false
     this.fishingLine.visible = false
-
-    this.resizeObs = new ResizeObserver(() => this.resize())
-    this.resizeObs.observe(canvas)
-    this.resize()
+    this.sceneReady = true
   }
 
   dispose(): void {
@@ -227,14 +268,23 @@ export class BadouziScene3D {
     this.fishingLine.visible = fishing
 
     if (fishing) {
-      const bx = 1.8 + castQuality * 4.2
-      const bz = 0.35 + Math.sin(bobberPhase) * 0.25
-      const sink = phase === 'bite' ? 0.35 + Math.sin(bobberPhase * 2) * 0.08 : 0.06
-      this.bobber.position.set(bx, sink, bz)
+      const castDist = 4 + castQuality * 10
+      const wobble = new THREE.Vector3(
+        Math.sin(bobberPhase) * 0.35,
+        0,
+        Math.cos(bobberPhase * 0.9) * 0.25,
+      )
+      const sink = phase === 'bite' ? 0.12 + Math.sin(bobberPhase * 2) * 0.05 : 0.04
+      this.bobber.position
+        .copy(this.pierFocus)
+        .add(this.seaCastDir.clone().multiplyScalar(castDist))
+        .add(wobble)
+      this.bobber.position.y = sink
       if (phase === 'reeling') {
         const t = reelProgress / 100
-        this.bobber.position.x = THREE.MathUtils.lerp(bx, this.rodTip.x + 1.2, t * 0.85)
-        this.bobber.position.z = THREE.MathUtils.lerp(bz, this.rodTip.z, t * 0.85)
+        const tipWorld = this.rodTip.clone()
+        this.shuaiGroup.localToWorld(tipWorld)
+        this.bobber.position.lerp(tipWorld, t * 0.85)
       }
 
       const tip = this.rodTip.clone()
@@ -266,7 +316,6 @@ export class BadouziScene3D {
 
   private buildGrandpa(): THREE.Group {
     const g = new THREE.Group()
-    g.position.set(-3.2, 0.35, -1.2)
 
     const jacket = new THREE.Mesh(
       new THREE.BoxGeometry(0.78, 0.58, 0.58),
@@ -307,8 +356,6 @@ export class BadouziScene3D {
 
   private buildShuaiShuai(): THREE.Group {
     const g = new THREE.Group()
-    g.position.set(-2.35, 0.35, 0.8)
-    g.rotation.y = Math.PI / 2
 
     const body = new THREE.Mesh(
       new THREE.BoxGeometry(0.55, 0.5, 0.45),

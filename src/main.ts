@@ -7,7 +7,7 @@ app.innerHTML = `
   <div class="game-shell">
     <div class="loading" id="loading">
       <div class="spinner" aria-hidden="true"></div>
-      <span>載入八斗子海邊…</span>
+      <span id="loading-text">載入八斗子衛星場景…</span>
     </div>
     <div class="error-banner" id="error" hidden></div>
     <canvas class="game-canvas" id="canvas" aria-label="基隆八斗子俯視3D釣魚場景"></canvas>
@@ -24,7 +24,7 @@ app.innerHTML = `
     </header>
 
     <div class="view-toolbar" id="view-toolbar" hidden>
-      <p class="view-ref">場景參考：八斗子漁港防波堤 · 海科館方向</p>
+      <p class="view-ref">真實衛星圖：八斗子漁港（25.14°N, 121.79°E）· 底圖 Esri World Imagery</p>
       <div class="view-row">
         <button type="button" class="btn-chip" id="btn-view-toggle" aria-pressed="false">調整視角</button>
         <button type="button" class="btn-chip" data-preset="overview">俯瞰</button>
@@ -220,9 +220,16 @@ let game: BadouziFishingGame
 
 try {
   game = new BadouziFishingGame(canvas, applyUi)
-  game.init()
   setOverlays('menu')
-  loadingEl.hidden = true
+  game.init(
+    () => {
+      loadingEl.hidden = true
+    },
+    (message) => {
+      loadingEl.hidden = true
+      showError(message)
+    },
+  )
 } catch (e) {
   loadingEl.hidden = true
   showError(e instanceof Error ? e.message : '遊戲初始化失敗，請重新整理頁面')
