@@ -7,7 +7,7 @@ app.innerHTML = `
   <div class="game-shell">
     <div class="loading" id="loading">
       <div class="spinner" aria-hidden="true"></div>
-      <span id="loading-text">載入八斗子衛星場景…</span>
+      <span id="loading-text">載入八斗子 3D 場景…</span>
     </div>
     <div class="error-banner" id="error" hidden></div>
     <canvas class="game-canvas" id="canvas" aria-label="基隆八斗子俯視3D釣魚場景"></canvas>
@@ -24,7 +24,7 @@ app.innerHTML = `
     </header>
 
     <div class="view-toolbar" id="view-toolbar" hidden>
-      <p class="view-ref">真實衛星圖：八斗子漁港（25.14°N, 121.79°E）· 底圖 Esri World Imagery</p>
+      <p class="view-ref">實比例模型：1 單位 = 1 公尺 · 八斗子漁港／海科館配置參考</p>
       <div class="view-row">
         <button type="button" class="btn-chip" id="btn-view-toggle" aria-pressed="false">調整視角</button>
         <button type="button" class="btn-chip" data-preset="overview">俯瞰</button>

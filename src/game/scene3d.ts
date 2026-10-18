@@ -1,7 +1,11 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { buildRealWorldOverlay } from './badouziEnvironment.ts'
-import { BADOUZI_HARBOR, createRealWorldGround } from './realWorldGround.ts'
+import { buildModeledBadouziHarbor } from './badouziModels.ts'
+import {
+  SHUAI_ROD_TIP,
+  buildGrandpaCharacter,
+  buildShuaiShuaiCharacter,
+} from './characters.ts'
 
 export type CameraPreset = 'overview' | 'pier' | 'sea' | 'museum'
 
@@ -16,32 +20,10 @@ export interface SceneVisualState {
 }
 
 const PRESETS: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
-  overview: { pos: new THREE.Vector3(0, 42, 32), target: new THREE.Vector3(0, 0, 0) },
-  pier: { pos: new THREE.Vector3(-6, 8, 10), target: new THREE.Vector3(-2, 0.5, 0) },
-  sea: { pos: new THREE.Vector3(18, 10, -4), target: new THREE.Vector3(6, 0, 2) },
-  museum: { pos: new THREE.Vector3(-12, 14, 16), target: new THREE.Vector3(-8, 2, 8) },
-}
-
-function labelSprite(text: string, color = '#ffffff', bg = 'rgba(15, 23, 42, 0.75)'): THREE.Sprite {
-  const canvas = document.createElement('canvas')
-  canvas.width = 256
-  canvas.height = 96
-  const ctx = canvas.getContext('2d')!
-  ctx.fillStyle = bg
-  ctx.roundRect(8, 16, 240, 56, 20)
-  ctx.fill()
-  ctx.fillStyle = color
-  ctx.font = 'bold 42px "PingFang TC", "Noto Sans TC", sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(text, 128, 48)
-  const tex = new THREE.CanvasTexture(canvas)
-  tex.minFilter = THREE.LinearFilter
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true })
-  const sprite = new THREE.Sprite(mat)
-  sprite.scale.set(2.2, 0.82, 1)
-  sprite.position.y = 1.35
-  return sprite
+  overview: { pos: new THREE.Vector3(12, 58, 46), target: new THREE.Vector3(8, 1.2, 0) },
+  pier: { pos: new THREE.Vector3(-2, 6.5, 9), target: new THREE.Vector3(6, 1.2, 0) },
+  sea: { pos: new THREE.Vector3(48, 12, -10), target: new THREE.Vector3(24, 0, 2) },
+  museum: { pos: new THREE.Vector3(-40, 22, 62), target: new THREE.Vector3(-70, 8, 48) },
 }
 
 export class BadouziScene3D {
@@ -51,19 +33,18 @@ export class BadouziScene3D {
   private camera: THREE.PerspectiveCamera
   private controls: OrbitControls
   private sun: THREE.DirectionalLight
-  private water: THREE.Mesh
-  private waterBaseY: Float32Array
-  private shuaiGroup: THREE.Group
-  private grandpaGroup: THREE.Group
-  private bobber: THREE.Group
+  private water!: THREE.Mesh
+  private waterBaseY!: Float32Array
+  private shuaiGroup!: THREE.Group
+  private grandpaGroup!: THREE.Group
+  private bobber!: THREE.Group
   private fishingLine: THREE.Line
   private lineGeo: THREE.BufferGeometry
   private boats: THREE.Group[] = []
   private resizeObs: ResizeObserver
   private controlsEnabled = false
-  private pierFocus = new THREE.Vector3(0, 0, 0)
-  private seaCastDir = new THREE.Vector3(0.92, 0, 0.38)
-  private bootstrapPromise: Promise<void> | null = null
+  private pierFocus = new THREE.Vector3(18, 0, 1.5)
+  private seaCastDir = new THREE.Vector3(1, 0, 0.12)
   private sceneReady = false
   private animatingCamera = false
   private cameraFrom = new THREE.Vector3()
@@ -72,7 +53,7 @@ export class BadouziScene3D {
   private targetTo = new THREE.Vector3()
   private cameraT = 1
 
-  private readonly rodTip = new THREE.Vector3(-0.55, 0.95, 0.15)
+  private readonly rodTip = SHUAI_ROD_TIP.clone()
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -85,14 +66,14 @@ export class BadouziScene3D {
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 1.05
+    this.renderer.toneMappingExposure = 1.08
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color('#dbeafe')
-    this.scene.fog = new THREE.FogExp2('#e2e8f0', 0.008)
+    this.scene.background = new THREE.Color('#93c5fd')
+    this.scene.fog = new THREE.FogExp2('#bfdbfe', 0.0032)
 
-    this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160)
+    this.camera = new THREE.PerspectiveCamera(45, 1, 0.5, 420)
     this.camera.position.copy(PRESETS.overview.pos)
 
     this.controls = new OrbitControls(this.camera, canvas)
@@ -101,35 +82,33 @@ export class BadouziScene3D {
     this.controls.dampingFactor = 0.06
     this.controls.target.copy(PRESETS.overview.target)
     this.controls.minDistance = 4
-    this.controls.maxDistance = 48
-    this.controls.minPolarAngle = 0.12
+    this.controls.maxDistance = 140
+    this.controls.minPolarAngle = 0.1
     this.controls.maxPolarAngle = Math.PI * 0.48
-    const hemi = new THREE.HemisphereLight('#e0f2fe', '#3f4f3a', 0.9)
+
+    const hemi = new THREE.HemisphereLight('#e0f2fe', '#334155', 0.85)
     this.scene.add(hemi)
 
-    this.sun = new THREE.DirectionalLight('#fff7ed', 1.35)
-    this.sun.position.set(-18, 28, 12)
+    this.sun = new THREE.DirectionalLight('#fff7ed', 1.3)
+    this.sun.position.set(-45, 65, 25)
     this.sun.castShadow = true
     this.sun.shadow.mapSize.set(2048, 2048)
-    this.sun.shadow.camera.near = 2
-    this.sun.shadow.camera.far = 60
-    this.sun.shadow.camera.left = -22
-    this.sun.shadow.camera.right = 22
-    this.sun.shadow.camera.top = 22
-    this.sun.shadow.camera.bottom = -22
-    this.sun.shadow.bias = -0.0004
+    this.sun.shadow.camera.near = 4
+    this.sun.shadow.camera.far = 220
+    this.sun.shadow.camera.left = -90
+    this.sun.shadow.camera.right = 90
+    this.sun.shadow.camera.top = 90
+    this.sun.shadow.camera.bottom = -90
+    this.sun.shadow.bias = -0.00035
     this.scene.add(this.sun)
 
-    this.water = new THREE.Mesh()
-    this.waterBaseY = new Float32Array(0)
-    this.grandpaGroup = new THREE.Group()
-    this.shuaiGroup = new THREE.Group()
-    this.bobber = new THREE.Group()
     this.lineGeo = new THREE.BufferGeometry()
     this.fishingLine = new THREE.Line(
       this.lineGeo,
-      new THREE.LineBasicMaterial({ color: 0xf8fafc, transparent: true, opacity: 0.92 }),
+      new THREE.LineBasicMaterial({ color: 0xf8fafc, transparent: true, opacity: 0.9 }),
     )
+
+    this.setupScene()
 
     this.resizeObs = new ResizeObserver(() => this.resize())
     this.resizeObs.observe(canvas)
@@ -137,33 +116,25 @@ export class BadouziScene3D {
   }
 
   bootstrap(): Promise<void> {
-    if (!this.bootstrapPromise) {
-      this.bootstrapPromise = this.loadRealWorldScene()
-    }
-    return this.bootstrapPromise
+    return Promise.resolve()
   }
 
   isReady(): boolean {
     return this.sceneReady
   }
 
-  private async loadRealWorldScene(): Promise<void> {
-    const ground = await createRealWorldGround(BADOUZI_HARBOR.lat, BADOUZI_HARBOR.lon, 17, 2)
-    this.scene.add(ground.mesh)
-
-    const env = await buildRealWorldOverlay(this.scene, ground.metersPerUnit)
+  private setupScene(): void {
+    const env = buildModeledBadouziHarbor(this.scene)
     this.boats = env.boats
     this.water = env.waterSurface
     this.pierFocus.copy(env.pierFocus)
-    PRESETS.overview.target.copy(this.pierFocus)
-    PRESETS.pier.target.copy(env.shuaiPosition)
-    PRESETS.sea.target.copy(this.pierFocus).add(new THREE.Vector3(8, 0, 3))
-    PRESETS.museum.target.set(
-      env.shuaiPosition.x - 6,
-      1,
-      env.shuaiPosition.z + 10,
-    )
-    this.controls.target.copy(this.pierFocus)
+    this.seaCastDir.copy(env.castDirection)
+    this.controls.target.copy(this.pierFocus.clone().setY(1.2))
+
+    PRESETS.overview.target.set(8, 1.2, 0)
+    PRESETS.pier.target.copy(env.shuaiPosition).setY(1.2)
+    PRESETS.sea.target.copy(this.pierFocus)
+    PRESETS.museum.target.set(-70, 8, 48)
 
     const posAttr = this.water.geometry.attributes.position
     this.waterBaseY = new Float32Array(posAttr.count)
@@ -171,12 +142,14 @@ export class BadouziScene3D {
       this.waterBaseY[i] = posAttr.getY(i)
     }
 
-    this.grandpaGroup = this.buildGrandpa()
-    this.grandpaGroup.position.set(env.grandpaPosition.x, 0.35, env.grandpaPosition.z)
+    this.grandpaGroup = buildGrandpaCharacter()
+    this.grandpaGroup.position.copy(env.grandpaPosition)
+    this.scene.add(this.grandpaGroup)
 
-    this.shuaiGroup = this.buildShuaiShuai()
-    this.shuaiGroup.position.set(env.shuaiPosition.x, 0.35, env.shuaiPosition.z)
-    this.shuaiGroup.rotation.y = Math.PI / 2 - 0.25
+    this.shuaiGroup = buildShuaiShuaiCharacter()
+    this.shuaiGroup.position.copy(env.shuaiPosition)
+    this.shuaiGroup.rotation.y = -Math.PI / 2 + 0.15
+    this.scene.add(this.shuaiGroup)
 
     this.bobber = this.buildBobber()
     this.scene.add(this.fishingLine)
@@ -247,19 +220,18 @@ export class BadouziScene3D {
     this.animateWater(wavePhase)
 
     const waterMat = this.water.material as THREE.MeshStandardMaterial
-    waterMat.emissiveIntensity = 0.1 + Math.sin(wavePhase * 2) * 0.04
+    waterMat.emissiveIntensity = 0.08 + Math.sin(wavePhase * 2) * 0.03
 
     for (let i = 0; i < this.boats.length; i++) {
       const boat = this.boats[i]!
-      boat.position.y = 0.02 + Math.sin(wavePhase * 1.1 + i) * 0.04
-      boat.rotation.z = Math.sin(wavePhase * 0.85 + i) * 0.035
-      boat.rotation.x = Math.sin(wavePhase * 0.6 + i * 0.5) * 0.02
+      boat.position.y = Math.sin(wavePhase * 1.1 + i) * 0.08
+      boat.rotation.z = Math.sin(wavePhase * 0.85 + i) * 0.018
     }
 
-    const castLean = phase === 'casting' ? (castMeter - 0.5) * 0.35 : 0
+    const castLean = phase === 'casting' ? (castMeter - 0.5) * 0.12 : 0
     this.shuaiGroup.rotation.z = castLean
     if (phase === 'reeling') {
-      this.shuaiGroup.rotation.x = -0.08 - (tension / 100) * 0.12
+      this.shuaiGroup.rotation.x = -0.04 - (tension / 100) * 0.06
     } else {
       this.shuaiGroup.rotation.x = THREE.MathUtils.lerp(this.shuaiGroup.rotation.x, 0, 0.1)
     }
@@ -268,35 +240,37 @@ export class BadouziScene3D {
     this.fishingLine.visible = fishing
 
     if (fishing) {
-      const castDist = 4 + castQuality * 10
+      const castDist = 12 + castQuality * 22
       const wobble = new THREE.Vector3(
-        Math.sin(bobberPhase) * 0.35,
+        Math.sin(bobberPhase) * 0.25,
         0,
-        Math.cos(bobberPhase * 0.9) * 0.25,
+        Math.cos(bobberPhase * 0.9) * 0.18,
       )
-      const sink = phase === 'bite' ? 0.12 + Math.sin(bobberPhase * 2) * 0.05 : 0.04
+      const sink = phase === 'bite' ? 0.08 + Math.sin(bobberPhase * 2) * 0.04 : 0.02
       this.bobber.position
         .copy(this.pierFocus)
         .add(this.seaCastDir.clone().multiplyScalar(castDist))
         .add(wobble)
       this.bobber.position.y = sink
+
       if (phase === 'reeling') {
         const t = reelProgress / 100
         const tipWorld = this.rodTip.clone()
         this.shuaiGroup.localToWorld(tipWorld)
-        this.bobber.position.lerp(tipWorld, t * 0.85)
+        this.bobber.position.lerp(tipWorld, t * 0.88)
+        this.bobber.position.y = THREE.MathUtils.lerp(sink, tipWorld.y - 0.5, t * 0.5)
       }
 
       const tip = this.rodTip.clone()
       this.shuaiGroup.localToWorld(tip)
       const bob = this.bobber.position.clone()
-      bob.y += 0.12
+      bob.y += 0.06
       const mid = new THREE.Vector3().lerpVectors(tip, bob, 0.5)
-      mid.y += 0.35
+      mid.y += Math.max(0.8, tip.distanceTo(bob) * 0.08)
       this.lineGeo.setFromPoints([tip, mid, bob])
     }
 
-    this.grandpaGroup.rotation.y = Math.sin(wavePhase * 0.3) * 0.05
+    this.grandpaGroup.rotation.y = Math.sin(wavePhase * 0.3) * 0.04
   }
 
   private animateWater(wavePhase: number): void {
@@ -306,117 +280,18 @@ export class BadouziScene3D {
       const z = pos.getZ(i)
       const base = this.waterBaseY[i]!
       const wave =
-        Math.sin(x * 0.35 + wavePhase * 1.4) * 0.06 +
-        Math.cos(z * 0.28 + wavePhase * 1.1) * 0.05
+        Math.sin(x * 0.08 + wavePhase * 1.4) * 0.12 +
+        Math.cos(z * 0.07 + wavePhase * 1.1) * 0.1
       pos.setY(i, base + wave)
     }
     pos.needsUpdate = true
     this.water.geometry.computeVertexNormals()
   }
 
-  private buildGrandpa(): THREE.Group {
-    const g = new THREE.Group()
-
-    const jacket = new THREE.Mesh(
-      new THREE.BoxGeometry(0.78, 0.58, 0.58),
-      new THREE.MeshStandardMaterial({ color: '#57534e', roughness: 0.88 }),
-    )
-    jacket.position.y = 0.35
-    jacket.castShadow = true
-    g.add(jacket)
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(0.28, 20, 20),
-      new THREE.MeshStandardMaterial({ color: '#fecaca', roughness: 0.72 }),
-    )
-    head.position.y = 0.78
-    head.castShadow = true
-    g.add(head)
-    const hair = new THREE.Mesh(
-      new THREE.SphereGeometry(0.29, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-      new THREE.MeshStandardMaterial({ color: '#e7e5e4' }),
-    )
-    hair.position.y = 0.82
-    g.add(hair)
-    const bucket = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.22, 0.18, 0.28, 14),
-      new THREE.MeshStandardMaterial({ color: '#854d0e', roughness: 0.65, metalness: 0.2 }),
-    )
-    bucket.position.set(0.55, 0.18, 0.35)
-    g.add(bucket)
-    const stool = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.2, 0.22, 0.08, 12),
-      new THREE.MeshStandardMaterial({ color: '#44403c' }),
-    )
-    stool.position.set(-0.15, 0.08, 0.1)
-    g.add(stool)
-    g.add(labelSprite('爺爺', '#fde68a'))
-    this.scene.add(g)
-    return g
-  }
-
-  private buildShuaiShuai(): THREE.Group {
-    const g = new THREE.Group()
-
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(0.55, 0.5, 0.45),
-      new THREE.MeshStandardMaterial({ color: '#2563eb', roughness: 0.75 }),
-    )
-    body.position.y = 0.32
-    body.castShadow = true
-    g.add(body)
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(0.24, 20, 20),
-      new THREE.MeshStandardMaterial({ color: '#fde68a', roughness: 0.65 }),
-    )
-    head.position.y = 0.72
-    head.castShadow = true
-    g.add(head)
-    const hat = new THREE.Mesh(
-      new THREE.ConeGeometry(0.28, 0.22, 4),
-      new THREE.MeshStandardMaterial({ color: '#f97316' }),
-    )
-    hat.position.y = 0.92
-    hat.rotation.y = Math.PI / 4
-    g.add(hat)
-    const vest = new THREE.Mesh(
-      new THREE.BoxGeometry(0.52, 0.22, 0.42),
-      new THREE.MeshStandardMaterial({ color: '#fcd34d' }),
-    )
-    vest.position.y = 0.42
-    g.add(vest)
-
-    const rod = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.025, 0.04, 1.65, 10),
-      new THREE.MeshStandardMaterial({ color: '#292524', roughness: 0.6, metalness: 0.15 }),
-    )
-    rod.position.set(0.15, 0.75, 0.55)
-    rod.rotation.x = -0.55
-    rod.rotation.z = 0.15
-    g.add(rod)
-    const reel = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.08, 0.08, 0.06, 12),
-      new THREE.MeshStandardMaterial({ color: '#64748b', metalness: 0.55, roughness: 0.35 }),
-    )
-    reel.rotation.z = Math.PI / 2
-    reel.position.set(0.05, 0.62, 0.48)
-    g.add(reel)
-
-    const tackle = new THREE.Mesh(
-      new THREE.BoxGeometry(0.35, 0.12, 0.22),
-      new THREE.MeshStandardMaterial({ color: '#15803d' }),
-    )
-    tackle.position.set(-0.35, 0.12, -0.35)
-    g.add(tackle)
-
-    g.add(labelSprite('帥帥', '#bfdbfe'))
-    this.scene.add(g)
-    return g
-  }
-
   private buildBobber(): THREE.Group {
     const g = new THREE.Group()
     const float = new THREE.Mesh(
-      new THREE.SphereGeometry(0.1, 16, 16),
+      new THREE.SphereGeometry(0.045, 14, 14),
       new THREE.MeshStandardMaterial({
         color: '#ef4444',
         emissive: '#7f1d1d',
@@ -424,13 +299,13 @@ export class BadouziScene3D {
         roughness: 0.35,
       }),
     )
-    float.position.y = 0.08
+    float.position.y = 0.035
     g.add(float)
     const stem = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.015, 0.015, 0.14, 8),
+      new THREE.CylinderGeometry(0.004, 0.004, 0.06, 6),
       new THREE.MeshStandardMaterial({ color: '#292524' }),
     )
-    stem.position.y = 0.16
+    stem.position.y = 0.07
     g.add(stem)
     this.scene.add(g)
     return g

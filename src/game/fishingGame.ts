@@ -95,16 +95,18 @@ export class BadouziFishingGame {
   init(onReady?: () => void, onError?: (message: string) => void): void {
     this.setDialogue('爺爺', '帥帥，今天爺爺帶你來八斗子漁港邊。準備好了就按開始。')
     this.emitUi()
-    this.scene3d
-      .bootstrap()
-      .then(() => {
+    void this.scene3d.bootstrap().then(
+      () => {
+        if (!this.scene3d.isReady()) {
+          onError?.('場景載入失敗')
+          return
+        }
         onReady?.()
         this.lastTs = performance.now()
         this.loop(this.lastTs)
-      })
-      .catch((e: unknown) => {
-        onError?.(e instanceof Error ? e.message : '場景載入失敗')
-      })
+      },
+      (e: unknown) => onError?.(e instanceof Error ? e.message : '場景載入失敗'),
+    )
   }
 
   destroy(): void {
