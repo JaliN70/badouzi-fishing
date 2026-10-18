@@ -92,9 +92,9 @@ export function buildShuaiShuaiCharacter(): THREE.Group {
     new THREE.CylinderGeometry(0.012, 0.018, 3.4, 10),
     new THREE.MeshStandardMaterial({ color: '#292524', roughness: 0.55 }),
   )
-  rod.position.set(0.08, 0.95, 0.28)
-  rod.rotation.x = -0.42
-  rod.rotation.y = 0.15
+  rod.position.set(0.06, 0.95, 0.22)
+  rod.rotation.x = -0.48
+  rod.rotation.y = 0.06
   g.add(rod)
 
   const reel = new THREE.Mesh(
@@ -112,5 +112,5 @@ export function buildShuaiShuaiCharacter(): THREE.Group {
   return g
 }
 
-/** 本地座標：竿尖（帥帥面向 +X 時） */
-export const SHUAI_ROD_TIP = new THREE.Vector3(0.12, 1.02, 1.55)
+/** 本地座標：竿尖（帥帥面向 +Z／外海時） */
+export const SHUAI_ROD_TIP = new THREE.Vector3(0.1, 1.04, 1.62)

@@ -20,10 +20,10 @@ export interface SceneVisualState {
 }
 
 const PRESETS: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
-  overview: { pos: new THREE.Vector3(12, 58, 46), target: new THREE.Vector3(8, 1.2, 0) },
-  pier: { pos: new THREE.Vector3(-2, 6.5, 9), target: new THREE.Vector3(6, 1.2, 0) },
-  sea: { pos: new THREE.Vector3(48, 12, -10), target: new THREE.Vector3(24, 0, 2) },
-  museum: { pos: new THREE.Vector3(-40, 22, 62), target: new THREE.Vector3(-70, 8, 48) },
+  overview: { pos: new THREE.Vector3(52, 78, -62), target: new THREE.Vector3(-38, 1.2, 30) },
+  pier: { pos: new THREE.Vector3(-70, 6, 26), target: new THREE.Vector3(-52, 1.2, 34) },
+  sea: { pos: new THREE.Vector3(-44, 10, 62), target: new THREE.Vector3(-48, 0.6, 38) },
+  museum: { pos: new THREE.Vector3(98, 32, 8), target: new THREE.Vector3(168, 10, -28) },
 }
 
 export class BadouziScene3D {
@@ -43,8 +43,9 @@ export class BadouziScene3D {
   private boats: THREE.Group[] = []
   private resizeObs: ResizeObserver
   private controlsEnabled = false
-  private pierFocus = new THREE.Vector3(18, 0, 1.5)
-  private seaCastDir = new THREE.Vector3(1, 0, 0.12)
+  private pierFocus = new THREE.Vector3(-48, 0, 38)
+  private seaCastDir = new THREE.Vector3(0.08, 0, 0.996)
+  private castFacingY = 0
   private sceneReady = false
   private animatingCamera = false
   private cameraFrom = new THREE.Vector3()
@@ -94,11 +95,11 @@ export class BadouziScene3D {
     this.sun.castShadow = true
     this.sun.shadow.mapSize.set(2048, 2048)
     this.sun.shadow.camera.near = 4
-    this.sun.shadow.camera.far = 220
-    this.sun.shadow.camera.left = -90
-    this.sun.shadow.camera.right = 90
-    this.sun.shadow.camera.top = 90
-    this.sun.shadow.camera.bottom = -90
+    this.sun.shadow.camera.far = 320
+    this.sun.shadow.camera.left = -120
+    this.sun.shadow.camera.right = 200
+    this.sun.shadow.camera.top = 120
+    this.sun.shadow.camera.bottom = -120
     this.sun.shadow.bias = -0.00035
     this.scene.add(this.sun)
 
@@ -129,12 +130,13 @@ export class BadouziScene3D {
     this.water = env.waterSurface
     this.pierFocus.copy(env.pierFocus)
     this.seaCastDir.copy(env.castDirection)
+    this.castFacingY = Math.atan2(env.castDirection.x, env.castDirection.z)
     this.controls.target.copy(this.pierFocus.clone().setY(1.2))
 
-    PRESETS.overview.target.set(8, 1.2, 0)
-    PRESETS.pier.target.copy(env.shuaiPosition).setY(1.2)
+    PRESETS.overview.target.set(-38, 1.2, 30)
+    PRESETS.pier.target.copy(env.pierFocus).setY(1.2)
     PRESETS.sea.target.copy(this.pierFocus)
-    PRESETS.museum.target.set(-70, 8, 48)
+    PRESETS.museum.target.set(168, 10, -28)
 
     const posAttr = this.water.geometry.attributes.position
     this.waterBaseY = new Float32Array(posAttr.count)
@@ -144,11 +146,12 @@ export class BadouziScene3D {
 
     this.grandpaGroup = buildGrandpaCharacter()
     this.grandpaGroup.position.copy(env.grandpaPosition)
+    this.grandpaGroup.rotation.y = this.castFacingY + 0.12
     this.scene.add(this.grandpaGroup)
 
     this.shuaiGroup = buildShuaiShuaiCharacter()
     this.shuaiGroup.position.copy(env.shuaiPosition)
-    this.shuaiGroup.rotation.y = -Math.PI / 2 + 0.15
+    this.shuaiGroup.rotation.y = this.castFacingY
     this.scene.add(this.shuaiGroup)
 
     this.bobber = this.buildBobber()
@@ -270,7 +273,8 @@ export class BadouziScene3D {
       this.lineGeo.setFromPoints([tip, mid, bob])
     }
 
-    this.grandpaGroup.rotation.y = Math.sin(wavePhase * 0.3) * 0.04
+    this.grandpaGroup.rotation.y =
+      this.castFacingY + 0.12 + Math.sin(wavePhase * 0.3) * 0.04
   }
 
   private animateWater(wavePhase: number): void {
