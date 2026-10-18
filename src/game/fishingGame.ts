@@ -36,6 +36,8 @@ export interface GameUiState {
   bobberY: number
   dexProgress: { unlocked: number; total: number }
   resultNewDex: boolean
+  resultSpeciesRecord: boolean
+  resultGlobalRecord: boolean
 }
 
 function loadStats(): SessionStats {
@@ -89,6 +91,8 @@ export class BadouziFishingGame {
   private bobberPhase = 0
   private wavePhase = 0
   private resultNewDex = false
+  private resultSpeciesRecord = false
+  private resultGlobalRecord = false
   private onUi: (state: GameUiState) => void
 
   constructor(canvas: HTMLCanvasElement, onUi: (state: GameUiState) => void) {
@@ -207,6 +211,8 @@ export class BadouziFishingGame {
     this.lastCatch = null
     this.pendingFish = null
     this.resultNewDex = false
+    this.resultSpeciesRecord = false
+    this.resultGlobalRecord = false
     this.setDialogue('阿公', GRANDPA_TIPS[Math.floor(Math.random() * GRANDPA_TIPS.length)]!)
     this.emitUi()
   }
@@ -215,6 +221,8 @@ export class BadouziFishingGame {
     this.phase = 'result'
     this.resultSuccess = success
     this.resultNewDex = false
+    this.resultSpeciesRecord = false
+    this.resultGlobalRecord = false
     if (success && this.pendingFish) {
       this.lastCatch = this.pendingFish
       this.stats.totalCatch += 1
@@ -223,6 +231,8 @@ export class BadouziFishingGame {
       saveStats(this.stats)
       const dex = recordDexCatch(this.pendingFish.species.id, this.pendingFish.kg)
       this.resultNewDex = dex.isNew
+      this.resultSpeciesRecord = dex.isSpeciesRecord
+      this.resultGlobalRecord = dex.isGlobalRecord
       this.setDialogue('阿公', this.pendingFish.species.grandpaLine)
     } else if (missedHook) {
       this.lastCatch = null
@@ -265,6 +275,8 @@ export class BadouziFishingGame {
       bobberY: 0,
       dexProgress: getDexProgress(),
       resultNewDex: this.resultNewDex,
+      resultSpeciesRecord: this.resultSpeciesRecord,
+      resultGlobalRecord: this.resultGlobalRecord,
     })
   }
 

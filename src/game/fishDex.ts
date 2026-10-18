@@ -40,22 +40,74 @@ function saveFishDex(state: FishDexState): void {
   }
 }
 
-export function recordDexCatch(speciesId: string, kg: number): { isNew: boolean } {
+export interface DexCatchResult {
+  isNew: boolean
+  /** 刷新此魚種個人最大釣獲 */
+  isSpeciesRecord: boolean
+  /** 刷新全圖鑑單尾最大重量 */
+  isGlobalRecord: boolean
+}
+
+function globalBestFromState(state: FishDexState): { speciesId: string; kg: number } | null {
+  let best: { speciesId: string; kg: number } | null = null
+  for (const [speciesId, entry] of Object.entries(state.entries)) {
+    if (!best || entry.bestKg > best.kg) {
+      best = { speciesId, kg: entry.bestKg }
+    }
+  }
+  return best
+}
+
+export function getGlobalBestRecord(): { species: FishSpecies; kg: number } | null {
   const state = loadFishDex()
+  const raw = globalBestFromState(state)
+  if (!raw) return null
+  const species = FISH_TABLE.find((s) => s.id === raw.speciesId)
+  if (!species) return null
+  return { species, kg: raw.kg }
+}
+
+export function getRankedWeightRecords(limit = 5): { species: FishSpecies; bestKg: number }[] {
+  const state = loadFishDex()
+  const rows: { species: FishSpecies; bestKg: number }[] = []
+  for (const species of FISH_TABLE) {
+    const entry = state.entries[species.id]
+    if (!entry) continue
+    rows.push({ species, bestKg: entry.bestKg })
+  }
+  rows.sort((a, b) => b.bestKg - a.bestKg)
+  return rows.slice(0, limit)
+}
+
+export function formatRecordWeight(kg: number): string {
+  return kg >= 1 ? `${kg.toFixed(2)} 公斤` : `${Math.round(kg * 1000)} 公克`
+}
+
+export function recordDexCatch(speciesId: string, kg: number): DexCatchResult {
+  const state = loadFishDex()
+  const prevGlobal = globalBestFromState(state)
   const prev = state.entries[speciesId]
+  const isNew = !prev
+  const isSpeciesRecord = !prev || kg > prev.bestKg
+  const willBeatGlobal = !prevGlobal || kg > prevGlobal.kg
+
   if (!prev) {
     state.entries[speciesId] = {
       count: 1,
       bestKg: kg,
       firstCaughtAt: Date.now(),
     }
-    saveFishDex(state)
-    return { isNew: true }
+  } else {
+    prev.count += 1
+    if (kg > prev.bestKg) prev.bestKg = kg
   }
-  prev.count += 1
-  if (kg > prev.bestKg) prev.bestKg = kg
   saveFishDex(state)
-  return { isNew: false }
+
+  return {
+    isNew,
+    isSpeciesRecord,
+    isGlobalRecord: isSpeciesRecord && willBeatGlobal,
+  }
 }
 
 export function getDexProgress(): { unlocked: number; total: number } {

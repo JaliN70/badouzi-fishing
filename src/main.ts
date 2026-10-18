@@ -1,7 +1,15 @@
 import './style.css'
 import { formatKg } from './game/fish.ts'
 import { BadouziFishingGame, type FishingPhase, type GameUiState } from './game/fishingGame.ts'
-import { buildDexCards, getDexProgress, harborLabel, rarityLabel } from './game/fishDex.ts'
+import {
+  buildDexCards,
+  formatRecordWeight,
+  getDexProgress,
+  getGlobalBestRecord,
+  getRankedWeightRecords,
+  harborLabel,
+  rarityLabel,
+} from './game/fishDex.ts'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
@@ -99,6 +107,8 @@ app.innerHTML = `
         <h2 class="catch-name" id="catch-name">—</h2>
         <p class="catch-weight" id="catch-weight"></p>
         <p class="dex-badge" id="dex-new-badge" hidden>圖鑑新登錄！</p>
+        <p class="dex-badge dex-badge--record" id="dex-record-badge" hidden>此魚種最大紀錄！</p>
+        <p class="dex-badge dex-badge--global" id="dex-global-badge" hidden>全圖鑑最大紀錄！</p>
       </div>
       <p class="overlay-sub" id="result-msg"></p>
       <button type="button" class="btn-primary" id="btn-again">再釣一竿</button>
@@ -109,6 +119,8 @@ app.innerHTML = `
         <header class="dex-header">
           <h2 class="dex-title" id="dex-title">八斗子魚類圖鑑</h2>
           <p class="dex-summary" id="dex-summary">已收集 0 / 0 種</p>
+          <p class="dex-record-global" id="dex-record-global">最大釣獲紀錄：尚無</p>
+          <ol class="dex-record-list" id="dex-record-list" hidden></ol>
           <p class="dex-hint">八斗子、碧砂漁港魚種 · 成功釣起後自動登錄 · 本機保存</p>
         </header>
         <div class="dex-grid" id="dex-grid"></div>
@@ -135,6 +147,8 @@ const dialogueTextEl = document.querySelector<HTMLParagraphElement>('#dialogue-t
 const dexOverlayEl = document.querySelector<HTMLDivElement>('#dex-overlay')!
 const dexGridEl = document.querySelector<HTMLDivElement>('#dex-grid')!
 const dexSummaryEl = document.querySelector<HTMLParagraphElement>('#dex-summary')!
+const dexRecordGlobalEl = document.querySelector<HTMLParagraphElement>('#dex-record-global')!
+const dexRecordListEl = document.querySelector<HTMLOListElement>('#dex-record-list')!
 const dexProgressEl = document.querySelector<HTMLSpanElement>('#dex-progress')!
 const dexProgressMenuEl = document.querySelector<HTMLSpanElement>('#dex-progress-menu')!
 const hudEl = document.querySelector<HTMLElement>('#hud')!
@@ -149,6 +163,29 @@ function renderFishDex(): void {
   dexProgressEl.textContent = formatDexProgressText(progress)
   dexProgressMenuEl.textContent = formatDexProgressText(progress)
 
+  const globalBest = getGlobalBestRecord()
+  if (globalBest) {
+    dexRecordGlobalEl.textContent = `最大釣獲紀錄：${globalBest.species.name} · ${formatRecordWeight(globalBest.kg)}`
+  } else {
+    dexRecordGlobalEl.textContent = '最大釣獲紀錄：尚無'
+  }
+
+  const ranked = getRankedWeightRecords(5)
+  if (ranked.length === 0) {
+    dexRecordListEl.hidden = true
+    dexRecordListEl.innerHTML = ''
+  } else {
+    dexRecordListEl.hidden = false
+    dexRecordListEl.innerHTML = ranked
+      .map(
+        (row, i) =>
+          `<li><span class="dex-record-list__rank">${i + 1}</span><span class="dex-record-list__name">${row.species.name}</span><span class="dex-record-list__kg">${formatRecordWeight(row.bestKg)}</span></li>`,
+      )
+      .join('')
+  }
+
+  const globalBestId = globalBest?.species.id ?? null
+
   dexGridEl.innerHTML = buildDexCards()
     .map((card) => {
       if (!card.unlocked) {
@@ -156,24 +193,25 @@ function renderFishDex(): void {
           <article class="dex-card dex-card--locked">
             <span class="dex-card__emoji dex-card__emoji--silhouette" aria-hidden="true">？</span>
             <h3 class="dex-card__name">未解鎖</h3>
-            <p class="dex-card__note">在八斗子釣起這種魚後，圖鑑會顯示名稱與說明。</p>
+            <p class="dex-card__note">釣起後解鎖名稱與說明。</p>
             <span class="dex-card__tag dex-card__tag--rarity">${rarityLabel(card.species.rarity)}</span>
-            <span class="dex-card__harbor">${harborLabel(card.species)}</span>
+            <span class="dex-card__harbor dex-card__harbor--muted">${harborLabel(card.species)}</span>
           </article>
         `
       }
-      const best =
-        card.bestKg >= 1
-          ? `${card.bestKg.toFixed(2)} 公斤`
-          : `${Math.round(card.bestKg * 1000)} 公克`
+      const best = formatRecordWeight(card.bestKg)
+      const isGlobal = globalBestId === card.species.id
       return `
-        <article class="dex-card dex-card--unlocked">
+        <article class="dex-card dex-card--unlocked${isGlobal ? ' dex-card--record-top' : ''}">
           <span class="dex-card__emoji" aria-hidden="true">${card.species.emoji}</span>
           <h3 class="dex-card__name">${card.species.name}</h3>
           <p class="dex-card__note">${card.species.dexNote}</p>
+          <div class="dex-card__record">
+            <span class="dex-card__record-label">最大釣獲</span>
+            <span class="dex-card__record-value">${best}</span>
+          </div>
           <dl class="dex-card__stats">
-            <div><dt>釣獲</dt><dd>${card.count} 次</dd></div>
-            <div><dt>最大</dt><dd>${best}</dd></div>
+            <div><dt>釣獲次數</dt><dd>${card.count} 次</dd></div>
           </dl>
           <span class="dex-card__tag dex-card__tag--rarity">${rarityLabel(card.species.rarity)}</span>
           <span class="dex-card__harbor">${harborLabel(card.species)}</span>
@@ -253,16 +291,23 @@ function applyUi(state: GameUiState): void {
     const weight = document.querySelector<HTMLParagraphElement>('#catch-weight')!
     const msg = document.querySelector<HTMLParagraphElement>('#result-msg')!
     const dexBadge = document.querySelector<HTMLParagraphElement>('#dex-new-badge')!
+    const recordBadge = document.querySelector<HTMLParagraphElement>('#dex-record-badge')!
+    const globalBadge = document.querySelector<HTMLParagraphElement>('#dex-global-badge')!
     if (state.resultSuccess && state.lastCatch) {
       card.hidden = false
       emoji.textContent = state.lastCatch.species.emoji
       name.textContent = state.lastCatch.species.name
       weight.textContent = formatKg(state.lastCatch.kg)
       dexBadge.hidden = !state.resultNewDex
+      recordBadge.hidden =
+        !state.resultSpeciesRecord || state.resultGlobalRecord || state.resultNewDex
+      globalBadge.hidden = !state.resultGlobalRecord
       msg.textContent = '帥帥把魚放進桶裡，阿公點點頭。'
     } else {
       card.hidden = true
       dexBadge.hidden = true
+      recordBadge.hidden = true
+      globalBadge.hidden = true
       msg.textContent = state.dialogueText
     }
     return

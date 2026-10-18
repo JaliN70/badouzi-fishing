@@ -493,6 +493,16 @@ body {
   display: none !important;
 }
 
+.dex-badge--record {
+  color: #0369a1;
+  background: #e0f2fe;
+}
+
+.dex-badge--global {
+  color: #7c2d12;
+  background: #ffedd5;
+}
+
 .overlay--dex {
   z-index: 12;
   justify-content: flex-end;
@@ -530,6 +540,58 @@ body {
   color: #b45309;
 }
 
+.dex-record-global {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0c4a6e;
+  background: #e0f2fe;
+  padding: 8px 10px;
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+.dex-record-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  color: #44403c;
+}
+
+.dex-record-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(12, 74, 110, 0.08);
+}
+
+.dex-record-list li:last-child {
+  border-bottom: none;
+}
+
+.dex-record-list__rank {
+  flex: 0 0 18px;
+  font-weight: 800;
+  color: #b45309;
+}
+
+.dex-record-list__name {
+  flex: 1;
+  font-weight: 700;
+}
+
+.dex-record-list__kg {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #0c4a6e;
+}
+
+.dex-record-list[hidden] {
+  display: none !important;
+}
+
 .dex-hint {
   margin: 6px 0 0;
   font-size: 11px;
@@ -549,7 +611,7 @@ body {
 
 .dex-card {
   position: relative;
-  padding: 12px 10px 36px;
+  padding: 12px 10px 38px;
   border-radius: 14px;
   border: 1px solid rgba(12, 74, 110, 0.12);
   background: #fff;
@@ -558,6 +620,42 @@ body {
 
 .dex-card--locked {
   background: linear-gradient(145deg, #e2e8f0, #cbd5e1);
+}
+
+.dex-card--record-top {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.dex-card__record {
+  margin: 8px 0 6px;
+  padding: 8px 8px;
+  border-radius: 10px;
+  background: #f0f9ff;
+  border: 1px solid rgba(3, 105, 161, 0.15);
+  text-align: center;
+}
+
+.dex-card--record-top .dex-card__record {
+  background: #fffbeb;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.dex-card__record-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.04em;
+}
+
+.dex-card__record-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #0c4a6e;
 }
 
 .dex-card__emoji {
@@ -639,10 +737,14 @@ body {
   bottom: 8px;
   font-size: 9px;
   font-weight: 700;
-  color: #78716c;
+  color: #57534e;
   text-align: left;
   line-height: 1.3;
   padding-right: 52px;
+}
+
+.dex-card__harbor--muted {
+  color: #64748b;
 }
 
 .dex-panel > .btn-primary {
