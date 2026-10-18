@@ -1,6 +1,7 @@
 import './style.css'
 import { formatKg } from './game/fish.ts'
 import { BadouziFishingGame, type FishingPhase, type GameUiState } from './game/fishingGame.ts'
+import { buildDexCards, getDexProgress, rarityLabel } from './game/fishDex.ts'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
@@ -17,6 +18,10 @@ app.innerHTML = `
         <span class="hud-label">基隆 · 八斗子</span>
         <span class="hud-value hud-value--small" id="catch-count">0 尾</span>
       </div>
+      <button type="button" class="btn-dex-fab" id="btn-dex" aria-label="魚類圖鑑">
+        <span class="btn-dex-fab__icon" aria-hidden="true">📖</span>
+        <span class="btn-dex-fab__label" id="dex-progress">0/6</span>
+      </button>
       <div class="hud-block hud-block--end">
         <span class="hud-label">累計重量</span>
         <span class="hud-value" id="total-kg">0 公克</span>
@@ -75,6 +80,7 @@ app.innerHTML = `
       <h1 class="overlay-title">帥帥與阿公<br/>釣魚記</h1>
       <p class="overlay-sub">跟著阿公在防波堤邊學釣魚：拋竿、看浮標、刺魚、收線。魚種參考八斗子近海常見的魚。</p>
       <button type="button" class="btn-primary" id="btn-menu-start">開始故事</button>
+      <button type="button" class="btn-dex-link" id="btn-dex-menu">魚類圖鑑 · <span id="dex-progress-menu">0/6</span></button>
       <p class="hint">釣魚按鈕在下方 · 遊戲中可開「調整視角」瀏覽 3D 場景</p>
     </div>
 
@@ -92,9 +98,22 @@ app.innerHTML = `
         <span class="catch-emoji" id="catch-emoji">🐟</span>
         <h2 class="catch-name" id="catch-name">—</h2>
         <p class="catch-weight" id="catch-weight"></p>
+        <p class="dex-badge" id="dex-new-badge" hidden>圖鑑新登錄！</p>
       </div>
       <p class="overlay-sub" id="result-msg"></p>
       <button type="button" class="btn-primary" id="btn-again">再釣一竿</button>
+    </div>
+
+    <div class="overlay overlay--dex" id="dex-overlay" hidden>
+      <div class="dex-panel" role="dialog" aria-labelledby="dex-title">
+        <header class="dex-header">
+          <h2 class="dex-title" id="dex-title">八斗子魚類圖鑑</h2>
+          <p class="dex-summary" id="dex-summary">已收集 0 / 6 種</p>
+          <p class="dex-hint">成功釣起後自動登錄 · 資料保存在本機</p>
+        </header>
+        <div class="dex-grid" id="dex-grid"></div>
+        <button type="button" class="btn-primary" id="btn-dex-close">關閉</button>
+      </div>
     </div>
   </div>
 `
@@ -113,6 +132,63 @@ const catchCountEl = document.querySelector<HTMLSpanElement>('#catch-count')!
 const totalKgEl = document.querySelector<HTMLSpanElement>('#total-kg')!
 const speakerEl = document.querySelector<HTMLSpanElement>('#speaker')!
 const dialogueTextEl = document.querySelector<HTMLParagraphElement>('#dialogue-text')!
+const dexOverlayEl = document.querySelector<HTMLDivElement>('#dex-overlay')!
+const dexGridEl = document.querySelector<HTMLDivElement>('#dex-grid')!
+const dexSummaryEl = document.querySelector<HTMLParagraphElement>('#dex-summary')!
+const dexProgressEl = document.querySelector<HTMLSpanElement>('#dex-progress')!
+const dexProgressMenuEl = document.querySelector<HTMLSpanElement>('#dex-progress-menu')!
+const hudEl = document.querySelector<HTMLElement>('#hud')!
+
+function formatDexProgressText(progress: { unlocked: number; total: number }): string {
+  return `${progress.unlocked}/${progress.total}`
+}
+
+function renderFishDex(): void {
+  const progress = getDexProgress()
+  dexSummaryEl.textContent = `已收集 ${progress.unlocked} / ${progress.total} 種`
+  dexProgressEl.textContent = formatDexProgressText(progress)
+  dexProgressMenuEl.textContent = formatDexProgressText(progress)
+
+  dexGridEl.innerHTML = buildDexCards()
+    .map((card) => {
+      if (!card.unlocked) {
+        return `
+          <article class="dex-card dex-card--locked">
+            <span class="dex-card__emoji dex-card__emoji--silhouette" aria-hidden="true">？</span>
+            <h3 class="dex-card__name">未解鎖</h3>
+            <p class="dex-card__note">在八斗子釣起這種魚後，圖鑑會顯示名稱與說明。</p>
+            <span class="dex-card__tag">${rarityLabel(card.species.rarity)}</span>
+          </article>
+        `
+      }
+      const best =
+        card.bestKg >= 1
+          ? `${card.bestKg.toFixed(2)} 公斤`
+          : `${Math.round(card.bestKg * 1000)} 公克`
+      return `
+        <article class="dex-card dex-card--unlocked">
+          <span class="dex-card__emoji" aria-hidden="true">${card.species.emoji}</span>
+          <h3 class="dex-card__name">${card.species.name}</h3>
+          <p class="dex-card__note">${card.species.dexNote}</p>
+          <dl class="dex-card__stats">
+            <div><dt>釣獲</dt><dd>${card.count} 次</dd></div>
+            <div><dt>最大</dt><dd>${best}</dd></div>
+          </dl>
+          <span class="dex-card__tag">${rarityLabel(card.species.rarity)}</span>
+        </article>
+      `
+    })
+    .join('')
+}
+
+function openFishDex(): void {
+  renderFishDex()
+  dexOverlayEl.hidden = false
+}
+
+function closeFishDex(): void {
+  dexOverlayEl.hidden = true
+}
 
 function showError(message: string): void {
   errorEl.textContent = message
@@ -127,12 +203,16 @@ function setOverlays(phase: FishingPhase): void {
   dialogueEl.hidden = !inGame
   actionPanelEl.hidden = !inGame
   document.querySelector<HTMLDivElement>('#view-toolbar')!.hidden = !inGame
+  hudEl.hidden = phase === 'menu'
+  document.querySelector<HTMLButtonElement>('#btn-dex')!.hidden = !inGame
 }
 
 function applyUi(state: GameUiState): void {
   setOverlays(state.phase)
 
   catchCountEl.textContent = `${state.stats.totalCatch} 尾`
+  dexProgressEl.textContent = formatDexProgressText(state.dexProgress)
+  dexProgressMenuEl.textContent = formatDexProgressText(state.dexProgress)
   totalKgEl.textContent =
     state.stats.totalKg >= 1
       ? `${state.stats.totalKg.toFixed(2)} 公斤`
@@ -170,14 +250,17 @@ function applyUi(state: GameUiState): void {
     const name = document.querySelector<HTMLHeadingElement>('#catch-name')!
     const weight = document.querySelector<HTMLParagraphElement>('#catch-weight')!
     const msg = document.querySelector<HTMLParagraphElement>('#result-msg')!
+    const dexBadge = document.querySelector<HTMLParagraphElement>('#dex-new-badge')!
     if (state.resultSuccess && state.lastCatch) {
       card.hidden = false
       emoji.textContent = state.lastCatch.species.emoji
       name.textContent = state.lastCatch.species.name
       weight.textContent = formatKg(state.lastCatch.kg)
+      dexBadge.hidden = !state.resultNewDex
       msg.textContent = '帥帥把魚放進桶裡，阿公點點頭。'
     } else {
       card.hidden = true
+      dexBadge.hidden = true
       msg.textContent = state.dialogueText
     }
     return
@@ -221,6 +304,7 @@ let game: BadouziFishingGame
 try {
   game = new BadouziFishingGame(canvas, applyUi)
   setOverlays('menu')
+  renderFishDex()
   game.init(
     () => {
       loadingEl.hidden = true
@@ -237,6 +321,18 @@ try {
 
 document.querySelector('#btn-menu-start')!.addEventListener('click', () => {
   game.goIntro()
+})
+
+document.querySelector('#btn-dex-menu')!.addEventListener('click', () => {
+  openFishDex()
+})
+
+document.querySelector('#btn-dex')!.addEventListener('click', () => {
+  openFishDex()
+})
+
+document.querySelector('#btn-dex-close')!.addEventListener('click', () => {
+  closeFishDex()
 })
 
 document.querySelector('#btn-intro-go')!.addEventListener('click', () => {

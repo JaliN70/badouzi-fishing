@@ -60,9 +60,15 @@ body {
   left: max(14px, env(safe-area-inset-left));
   right: max(14px, env(safe-area-inset-right));
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 8px;
   pointer-events: none;
   z-index: 2;
+}
+
+.hud[hidden] {
+  display: none !important;
 }
 
 .hud-block {
@@ -158,6 +164,57 @@ body {
 
 .hud-value--small {
   font-size: 16px;
+}
+
+.btn-dex-fab {
+  pointer-events: auto;
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(8px);
+  color: #fde68a;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 8px 12px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  touch-action: manipulation;
+}
+
+.btn-dex-fab__icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.btn-dex-fab:active {
+  transform: scale(0.97);
+}
+
+.btn-dex-fab[hidden] {
+  display: none !important;
+}
+
+.btn-dex-link {
+  appearance: none;
+  border: 1px solid rgba(253, 230, 138, 0.35);
+  background: rgba(15, 23, 42, 0.45);
+  color: #fde68a;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 20px;
+  border-radius: 999px;
+  margin-top: 12px;
+  max-width: 280px;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+.btn-dex-link:active {
+  transform: scale(0.98);
 }
 
 .dialogue {
@@ -419,6 +476,163 @@ body {
   margin: 0;
   font-size: 15px;
   color: #64748b;
+}
+
+.dex-badge {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #b45309;
+  background: #fef3c7;
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.dex-badge[hidden] {
+  display: none !important;
+}
+
+.overlay--dex {
+  z-index: 12;
+  justify-content: flex-end;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.dex-panel {
+  width: min(100%, 420px);
+  max-height: min(88vh, 640px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 251, 235, 0.98);
+  border-radius: 20px;
+  border: 2px solid rgba(180, 83, 9, 0.2);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.dex-header {
+  padding: 16px 18px 10px;
+  border-bottom: 1px solid rgba(180, 83, 9, 0.12);
+}
+
+.dex-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #0c4a6e;
+}
+
+.dex-summary {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.dex-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #78716c;
+}
+
+.dex-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dex-card {
+  position: relative;
+  padding: 12px 10px 28px;
+  border-radius: 14px;
+  border: 1px solid rgba(12, 74, 110, 0.12);
+  background: #fff;
+  text-align: center;
+}
+
+.dex-card--locked {
+  background: linear-gradient(145deg, #e2e8f0, #cbd5e1);
+}
+
+.dex-card__emoji {
+  display: block;
+  font-size: 36px;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.dex-card__emoji--silhouette {
+  font-size: 28px;
+  font-weight: 900;
+  color: #64748b;
+}
+
+.dex-card__name {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0c4a6e;
+}
+
+.dex-card--locked .dex-card__name {
+  color: #475569;
+}
+
+.dex-card__note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #57534e;
+  text-align: left;
+}
+
+.dex-card__stats {
+  margin: 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.dex-card__stats div {
+  flex: 1;
+  text-align: center;
+}
+
+.dex-card__stats dt {
+  font-weight: 600;
+  margin: 0;
+}
+
+.dex-card__stats dd {
+  margin: 2px 0 0;
+  font-weight: 800;
+  color: #0c4a6e;
+}
+
+.dex-card__tag {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(12, 74, 110, 0.08);
+  color: #0369a1;
+}
+
+.dex-panel > .btn-primary {
+  margin: 0 12px 12px;
+  width: calc(100% - 24px);
+  max-width: none;
 }
 
 .loading {

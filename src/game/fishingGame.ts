@@ -1,4 +1,5 @@
 import { pickFish, type FishSpecies } from './fish.ts'
+import { getDexProgress, recordDexCatch } from './fishDex.ts'
 import { BadouziScene3D, type CameraPreset } from './scene3d.ts'
 
 const STORAGE_KEY = 'badouzi-fishing-stats'
@@ -33,6 +34,8 @@ export interface GameUiState {
   resultSuccess: boolean
   stats: SessionStats
   bobberY: number
+  dexProgress: { unlocked: number; total: number }
+  resultNewDex: boolean
 }
 
 function loadStats(): SessionStats {
@@ -85,6 +88,7 @@ export class BadouziFishingGame {
   private dialogueText = ''
   private bobberPhase = 0
   private wavePhase = 0
+  private resultNewDex = false
   private onUi: (state: GameUiState) => void
 
   constructor(canvas: HTMLCanvasElement, onUi: (state: GameUiState) => void) {
@@ -202,6 +206,7 @@ export class BadouziFishingGame {
     this.phase = 'idle'
     this.lastCatch = null
     this.pendingFish = null
+    this.resultNewDex = false
     this.setDialogue('阿公', GRANDPA_TIPS[Math.floor(Math.random() * GRANDPA_TIPS.length)]!)
     this.emitUi()
   }
@@ -209,12 +214,15 @@ export class BadouziFishingGame {
   private finishCatch(success: boolean, missedHook = false): void {
     this.phase = 'result'
     this.resultSuccess = success
+    this.resultNewDex = false
     if (success && this.pendingFish) {
       this.lastCatch = this.pendingFish
       this.stats.totalCatch += 1
       this.stats.totalKg = Math.round((this.stats.totalKg + this.pendingFish.kg) * 100) / 100
       if (this.pendingFish.kg > this.stats.bestKg) this.stats.bestKg = this.pendingFish.kg
       saveStats(this.stats)
+      const dex = recordDexCatch(this.pendingFish.species.id, this.pendingFish.kg)
+      this.resultNewDex = dex.isNew
       this.setDialogue('阿公', this.pendingFish.species.grandpaLine)
     } else if (missedHook) {
       this.lastCatch = null
@@ -255,6 +263,8 @@ export class BadouziFishingGame {
       resultSuccess: this.resultSuccess,
       stats: { ...this.stats },
       bobberY: 0,
+      dexProgress: getDexProgress(),
+      resultNewDex: this.resultNewDex,
     })
   }
 
