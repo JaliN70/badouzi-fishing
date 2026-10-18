@@ -73,6 +73,7 @@ export class BadouziScene3D {
   private spotId: FishingSpotId = 'badouzi'
   private presets = PRESETS_BADOUZI
   private pointLights: THREE.PointLight[] = []
+  private pierWorkLight!: THREE.PointLight
 
   private readonly rodTip = SHUAI_ROD_TIP.clone()
 
@@ -92,6 +93,9 @@ export class BadouziScene3D {
     this.scene = new THREE.Scene()
     applyNightSky(this.scene, this.renderer)
     this.night = createNightLighting(this.scene)
+    this.pierWorkLight = new THREE.PointLight('#fef3c7', 1.6, 18, 1.5)
+    this.pierWorkLight.position.set(0, 3, 0)
+    this.scene.add(this.pierWorkLight)
 
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.5, 420)
     this.presets = spotId === 'chaojing' ? PRESETS_CHAOJING : PRESETS_BADOUZI
@@ -197,6 +201,10 @@ export class BadouziScene3D {
       this.shuaiGroup.position.copy(env.shuaiPosition)
       this.shuaiGroup.rotation.y = this.castFacingY
     }
+
+    this.pierWorkLight.position
+      .copy(env.shuaiPosition)
+      .add(new THREE.Vector3(0.8, 2.4, -0.6))
   }
 
   dispose(): void {
