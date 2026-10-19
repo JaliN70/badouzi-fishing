@@ -57,7 +57,19 @@ chmod +x scripts/setup-github-pages.sh
 
 3. GitHub → **Settings → Pages → Build and deployment → Source** 選 **GitHub Actions**  
 4. 推送 `main` 後 workflow `.github/workflows/deploy-pages.yml` 會建置並部署  
-5. 網址：`https://<使用者>.github.io/<repo名稱>/`
+5. 網址：`https://<使用者或組織>.github.io/badouzi-fishing/`（組織範例：[AJ-LIFE](https://github.com/AJ-LIFE) → `https://aj-life.github.io/badouzi-fishing/`）
+
+### 轉移到 GitHub 組織 AJ-LIFE
+
+1. 若尚未建立組織：到 [Create organization](https://github.com/organizations/new)，Organization account name 填 **AJ-LIFE**  
+2. 執行：
+
+```bash
+chmod +x scripts/transfer-to-aj-life.sh
+./scripts/transfer-to-aj-life.sh
+```
+
+轉移後請在 Cursor 將此專案連到新 repo **AJ-LIFE/badouzi-fishing**（或重新 **Create repo** 指向該遠端）。
 
 本地若需模擬 Pages 子路徑建置：
 
