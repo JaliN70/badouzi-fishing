@@ -1,4 +1,15 @@
 import * as THREE from 'three'
+import {
+  charTexMat,
+  grandpaArmTexture,
+  grandpaPantTexture,
+  shuaiForearmTexture,
+  shuaiHandTexture,
+  shuaiPantLegTexture,
+  shuaiUpperArmTexture,
+  shuaiVestTexture,
+  skinHeadTexture,
+} from './characterTextures.ts'
 
 function labelSprite(text: string, color: string): THREE.Sprite {
   const canvas = document.createElement('canvas')
@@ -24,32 +35,55 @@ function labelSprite(text: string, color: string): THREE.Sprite {
   return sprite
 }
 
-/** 不受場景光照影響，夜釣也清楚看見 */
-function charBasic(color: string): THREE.MeshBasicMaterial {
-  return new THREE.MeshBasicMaterial({ color })
+function limbBox(
+  w: number,
+  h: number,
+  d: number,
+  mat: THREE.MeshBasicMaterial,
+): THREE.Mesh {
+  return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat)
 }
 
 /** 阿公：坐高約 1.05m，總高約 1.55m */
 export function buildGrandpaCharacter(): THREE.Group {
   const g = new THREE.Group()
-  const skin = charBasic('#fecaca')
-  const cloth = charBasic('#78716c')
+  const cloth = charTexMat(
+    limbCanvasSolid('#78716c'),
+  )
+  const pantTex = grandpaPantTexture()
+  const armTex = grandpaArmTexture()
+  const headTex = skinHeadTexture('#fecaca', '#78716c')
 
   const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.08, 12), cloth)
   stool.position.y = 0.04
   g.add(stool)
 
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.48, 0.34), cloth)
+  const torso = limbBox(0.42, 0.48, 0.34, cloth)
   torso.position.y = 0.38
   g.add(torso)
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 20, 20), skin)
+  const legL = limbBox(0.16, 0.28, 0.16, charTexMat(pantTex))
+  legL.position.set(-0.12, 0.18, 0.12)
+  legL.rotation.x = 0.55
+  const legR = legL.clone()
+  legR.position.x = 0.12
+  g.add(legL, legR)
+
+  const armL = limbBox(0.12, 0.36, 0.12, charTexMat(armTex))
+  armL.position.set(-0.28, 0.42, 0.08)
+  armL.rotation.set(0.4, 0, 0.35)
+  const armR = limbBox(0.12, 0.34, 0.12, charTexMat(armTex))
+  armR.position.set(0.26, 0.44, 0.18)
+  armR.rotation.set(-0.25, -0.15, -0.45)
+  g.add(armL, armR)
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 24, 24), charTexMat(headTex))
   head.position.y = 0.72
   g.add(head)
 
   const bucket = new THREE.Mesh(
     new THREE.CylinderGeometry(0.16, 0.13, 0.22, 14),
-    charBasic('#ca8a04'),
+    charTexMat(limbCanvasSolid('#ca8a04')),
   )
   bucket.position.set(0.32, 0.12, 0.22)
   g.add(bucket)
@@ -62,39 +96,76 @@ export function buildGrandpaCharacter(): THREE.Group {
   return g
 }
 
-/** 帥帥：身高約 1.32m（孩童） */
+function limbCanvasSolid(color: string): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 8
+  canvas.height = 8
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = color
+  ctx.fillRect(0, 0, 8, 8)
+  return new THREE.CanvasTexture(canvas)
+}
+
+/** 帥帥：身高約 1.32m（孩童）— 四肢分段 + 貼圖 */
 export function buildShuaiShuaiCharacter(): THREE.Group {
   const g = new THREE.Group()
-  const skin = charBasic('#fde68a')
-  const shirt = charBasic('#3b82f6')
-  const vest = charBasic('#fcd34d')
+  const pantTex = shuaiPantLegTexture()
+  const upperArmTex = shuaiUpperArmTexture()
+  const foreTex = shuaiForearmTexture()
+  const handTex = shuaiHandTexture()
+  const vestTex = shuaiVestTexture()
+  const headTex = skinHeadTexture('#fde68a', '#1e293b')
+  const shirtSolid = charTexMat(limbCanvasSolid('#3b82f6'))
 
-  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.42, 0.14), shirt)
-  legL.position.set(-0.08, 0.21, 0)
-  const legR = legL.clone()
-  legR.position.x = 0.08
-  g.add(legL, legR)
+  const addLeg = (x: number): void => {
+    const upper = limbBox(0.15, 0.38, 0.15, charTexMat(pantTex))
+    upper.position.set(x, 0.35, 0)
+    const lower = limbBox(0.14, 0.32, 0.14, charTexMat(pantTex))
+    lower.position.set(x, 0.08, 0.02)
+    g.add(upper, lower)
+  }
+  addLeg(-0.09)
+  addLeg(0.09)
 
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.36, 0.2), shirt)
+  const torso = limbBox(0.32, 0.36, 0.2, shirtSolid)
   torso.position.y = 0.62
   g.add(torso)
 
-  const vestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.16, 0.22), vest)
+  const vestMesh = limbBox(0.34, 0.16, 0.22, charTexMat(vestTex))
   vestMesh.position.y = 0.7
   g.add(vestMesh)
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 20), skin)
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 24, 24), charTexMat(headTex))
   head.position.y = 0.92
   g.add(head)
 
-  const hat = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.1, 4), charBasic('#fb923c'))
+  const hat = new THREE.Mesh(
+    new THREE.ConeGeometry(0.13, 0.1, 4),
+    charTexMat(limbCanvasSolid('#fb923c')),
+  )
   hat.position.y = 1.05
   hat.rotation.y = Math.PI / 4
   g.add(hat)
 
+  const addArm = (side: 1 | -1): void => {
+    const sx = side * 0.22
+    const upper = limbBox(0.11, 0.28, 0.11, charTexMat(upperArmTex))
+    upper.position.set(sx, 0.68, 0)
+    upper.rotation.z = side * 0.35
+    const fore = limbBox(0.1, 0.26, 0.1, charTexMat(foreTex))
+    fore.position.set(sx + side * 0.06, 0.5, 0.04)
+    fore.rotation.z = side * 0.55
+    const hand = limbBox(0.09, 0.1, 0.06, charTexMat(handTex))
+    hand.position.set(sx + side * 0.1, 0.38, 0.06)
+    hand.rotation.z = side * 0.4
+    g.add(upper, fore, hand)
+  }
+  addArm(-1)
+  addArm(1)
+
   const rod = new THREE.Mesh(
     new THREE.CylinderGeometry(0.012, 0.018, 3.4, 10),
-    charBasic('#292524'),
+    charTexMat(limbCanvasSolid('#292524')),
   )
   rod.position.set(0.06, 0.95, 0.22)
   rod.rotation.x = -0.48
@@ -103,7 +174,7 @@ export function buildShuaiShuaiCharacter(): THREE.Group {
 
   const reel = new THREE.Mesh(
     new THREE.CylinderGeometry(0.045, 0.045, 0.05, 12),
-    charBasic('#94a3b8'),
+    charTexMat(limbCanvasSolid('#94a3b8')),
   )
   reel.rotation.z = Math.PI / 2
   reel.position.set(0.02, 0.82, 0.22)
