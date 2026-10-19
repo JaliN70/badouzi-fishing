@@ -57,19 +57,41 @@ chmod +x scripts/setup-github-pages.sh
 
 3. GitHub → **Settings → Pages → Build and deployment → Source** 選 **GitHub Actions**  
 4. 推送 `main` 後 workflow `.github/workflows/deploy-pages.yml` 會建置並部署  
-5. 網址：`https://<使用者或組織>.github.io/badouzi-fishing/`（組織範例：[AJ-LIFE](https://github.com/AJ-LIFE) → `https://aj-life.github.io/badouzi-fishing/`）
+5. 網址：`https://<使用者>.github.io/badouzi-fishing/`
 
-### 轉移到 GitHub 組織 AJ-LIFE
+## 本機放到 `AJ-LIFE` 資料夾
 
-1. 若尚未建立組織：到 [Create organization](https://github.com/organizations/new)，Organization account name 填 **AJ-LIFE**  
-2. 執行：
+在 Mac / Windows 上，建議目錄：`~/AJ-LIFE/badouzi-fishing`（Windows：`%USERPROFILE%\AJ-LIFE\badouzi-fishing`）。
+
+**第一次取得專案：**
 
 ```bash
-chmod +x scripts/transfer-to-aj-life.sh
-./scripts/transfer-to-aj-life.sh
+mkdir -p ~/AJ-LIFE
+git clone https://github.com/JaliN70/badouzi-fishing.git ~/AJ-LIFE/badouzi-fishing
+cd ~/AJ-LIFE/badouzi-fishing
+npm install
+npm run dev
 ```
 
-轉移後請在 Cursor 將此專案連到新 repo **AJ-LIFE/badouzi-fishing**（或重新 **Create repo** 指向該遠端）。
+或執行 repo 內腳本（在任意目錄 clone 後）：
+
+```bash
+chmod +x scripts/setup-local-aj-life.sh
+./scripts/setup-local-aj-life.sh
+```
+
+**已經在別的路徑有副本，只想搬到 `AJ-LIFE`：**
+
+```bash
+mkdir -p ~/AJ-LIFE
+mv /原本的路徑/badouzi-fishing ~/AJ-LIFE/
+cd ~/AJ-LIFE/badouzi-fishing
+npm install
+```
+
+自訂父資料夾：`AJ_LIFE_DIR=~/Documents/AJ-LIFE ./scripts/setup-local-aj-life.sh`
+
+更多本機與 GitHub 部署說明見 [DEPLOY-LOCAL.md](./DEPLOY-LOCAL.md)。
 
 本地若需模擬 Pages 子路徑建置：
 

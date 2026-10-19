@@ -1,12 +1,37 @@
+# 本機說明（Mac / Windows）
+
+## 放到 `AJ-LIFE` 資料夾
+
+```bash
+mkdir -p ~/AJ-LIFE
+git clone https://github.com/JaliN70/badouzi-fishing.git ~/AJ-LIFE/badouzi-fishing
+cd ~/AJ-LIFE/badouzi-fishing
+npm install
+npm run dev
+```
+
+瀏覽器開啟：`http://127.0.0.1:43123`
+
+Windows PowerShell 範例：
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\AJ-LIFE"
+git clone https://github.com/JaliN70/badouzi-fishing.git "$env:USERPROFILE\AJ-LIFE\badouzi-fishing"
+cd "$env:USERPROFILE\AJ-LIFE\badouzi-fishing"
+npm install
+npm run dev
+```
+
+---
+
 # 本機部署到 GitHub Pages（你已登入 GitHub 時）
 
-在 **Mac / Windows 本機 Terminal** 執行（需已安裝 [Git](https://git-scm.com/) 與 [GitHub CLI](https://cli.github.com/)，且 `gh auth status` 顯示已登入）。
+在 **Mac / Windows 本機 Terminal** 執行（需已安裝 [Git](https://git-scm.com/) 與 [Node.js](https://nodejs.org/)，GitHub 部署另需 [GitHub CLI](https://cli.github.com/) 且 `gh auth status` 已登入）。
 
 ## 一次完成
 
 ```bash
-git clone https://origin.cursor.com/jalin-you/tmp-83577919acd41ed6.git badouzi-fishing
-cd badouzi-fishing
+cd ~/AJ-LIFE/badouzi-fishing   # 或你的專案路徑
 gh repo create badouzi-fishing --public --source=. --remote=github --push
 ```
 
