@@ -10,7 +10,7 @@ export interface NightLightingHandles {
 export function applyNightSky(scene: THREE.Scene, renderer: THREE.WebGLRenderer): void {
   scene.background = new THREE.Color('#1a3348')
   scene.fog = new THREE.FogExp2('#3d5568', 0.00085)
-  renderer.toneMappingExposure = 2.05
+  renderer.toneMappingExposure = 1.88
 }
 
 export function createNightLighting(scene: THREE.Scene): NightLightingHandles {

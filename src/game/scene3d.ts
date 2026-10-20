@@ -15,7 +15,13 @@ import {
   syncParkLamps,
   type NightLightingHandles,
 } from './sceneNight.ts'
-import { createHorizonAmbience, type HorizonAmbience } from './sceneAmbience.ts'
+import {
+  createHorizonAmbience,
+  createJiufenRidgeLights,
+  type HorizonAmbience,
+  type JiufenRidgeAmbience,
+} from './sceneAmbience.ts'
+import { createNightBloomPipeline, type NightBloomPipeline } from './scenePost.ts'
 import type { SeaWaterEffects } from './seaWater.ts'
 import { attachNightSky, createMoonReflectionLight } from './sceneSky.ts'
 
@@ -57,6 +63,8 @@ export class BadouziScene3D {
   private envRoot = new THREE.Group()
   private seaWater: SeaWaterEffects | null = null
   private horizonAmbience: HorizonAmbience | null = null
+  private jiufenAmbience: JiufenRidgeAmbience | null = null
+  private bloom: NightBloomPipeline
   private lastPhase = ''
   private reelRippleAcc = 0
   private moonLight!: THREE.DirectionalLight
@@ -99,6 +107,7 @@ export class BadouziScene3D {
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace
 
     this.scene = new THREE.Scene()
     applyNightSky(this.scene, this.renderer)
@@ -118,6 +127,7 @@ export class BadouziScene3D {
     this.scene.add(this.pierSpot.target)
 
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.5, 420)
+    this.bloom = createNightBloomPipeline(this.renderer, this.scene, this.camera)
     this.presets = spotId === 'chaojing' ? PRESETS_CHAOJING : PRESETS_BADOUZI
 
     this.controls = new OrbitControls(this.camera, canvas)
@@ -193,6 +203,8 @@ export class BadouziScene3D {
     this.pointLights = syncParkLamps(this.night.lampGroup, [], this.pointLights)
     this.horizonAmbience?.dispose()
     this.horizonAmbience = null
+    this.jiufenAmbience?.dispose()
+    this.jiufenAmbience = null
     this.seaWater = null
   }
 
@@ -209,6 +221,7 @@ export class BadouziScene3D {
     this.seaWater = env.seaWater ?? null
     this.horizonAmbience?.dispose()
     this.horizonAmbience = createHorizonAmbience(this.envRoot)
+    this.jiufenAmbience = createJiufenRidgeLights(this.envRoot)
     this.pierFocus.copy(env.pierFocus)
     this.seaCastDir.copy(env.castDirection)
     this.castFacingY = Math.atan2(env.castDirection.x, env.castDirection.z)
@@ -290,6 +303,7 @@ export class BadouziScene3D {
     const w = Math.max(rect.width, 320)
     const h = Math.max(rect.height, 400)
     this.renderer.setSize(w, h, false)
+    this.bloom.resize(w, h)
     this.camera.aspect = w / h
     this.camera.updateProjectionMatrix()
   }
@@ -298,7 +312,7 @@ export class BadouziScene3D {
     this.updateCameraTween(dt)
     if (this.controls.enabled) this.controls.update()
     this.updateAnim(state)
-    this.renderer.render(this.scene, this.camera)
+    this.bloom.render()
   }
 
   private updateCameraTween(dt: number): void {
@@ -316,6 +330,7 @@ export class BadouziScene3D {
 
     this.seaWater?.setTime(wavePhase)
     this.horizonAmbience?.update(wavePhase)
+    this.jiufenAmbience?.update(wavePhase)
     this.moonLight.intensity = 0.32 + Math.sin(wavePhase * 0.4) * 0.06
 
     for (let i = 0; i < this.boats.length; i++) {
