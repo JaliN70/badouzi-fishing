@@ -12,6 +12,14 @@ import {
   woodDeckTexture,
 } from './sceneTextures.ts'
 import { addPierWetGleam } from './sceneAmbience.ts'
+import {
+  addPierFishingKit,
+  createDetailedFishingBoat,
+  createKeelungWindowSculpture,
+  createLighthouse,
+  createMooringBollard,
+  scatterPebbles,
+} from './propModels.ts'
 import { createSeaWater } from './seaWater.ts'
 import { bannerSign, mesh, roadSign } from './sceneUtils.ts'
 
@@ -28,12 +36,15 @@ function lampPost(
   )
   pole.position.set(x, h / 2, z)
   parent.add(pole)
+  const arm = mesh(new THREE.BoxGeometry(0.65, 0.06, 0.06), stdMat(steelTexture(), '#475569', { metalness: 0.6 }))
+  arm.position.set(x + 0.28, h - 0.15, z)
+  parent.add(arm)
   const head = mesh(
     new THREE.SphereGeometry(0.22, 12, 12),
     stdMat(null, '#fef9c3', { emissive: '#fde047', emissiveIntensity: 1.2 }),
     false,
   )
-  head.position.set(x, h + 0.15, z)
+  head.position.set(x + 0.55, h - 0.15, z)
   parent.add(head)
   lamps.push(new THREE.Vector3(x, h + 0.2, z))
 }
@@ -81,6 +92,11 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
 
   bannerSign(parent, '潮境公園', 'Chao-Jing Park', 18, 5.5, -42, 0.15)
   roadSign(parent, '基隆市 · 中正區', 22, 3.2, -38, -0.2, 0.9)
+
+  const windowArt = createKeelungWindowSculpture()
+  windowArt.position.set(8, 0.2, -8)
+  windowArt.rotation.y = 0.55
+  parent.add(windowArt)
 
   const visitor = mesh(new THREE.BoxGeometry(32, 8, 18), stdMat(null, '#f5f5f4', { roughness: 0.55 }))
   visitor.position.set(55, 4.2, -62)
@@ -138,22 +154,9 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
     lampPost(parent, x, 14, lampPositions, 6)
   }
 
-  const lighthouse = mesh(
-    new THREE.CylinderGeometry(1.4, 2, 16, 12),
-    stdMat(null, '#f8fafc', { roughness: 0.4 }),
-  )
-  lighthouse.position.set(108, 8.5, 8)
-  parent.add(lighthouse)
-  const lhBand = mesh(new THREE.CylinderGeometry(1.55, 1.55, 1.2, 12), stdMat(null, '#dc2626'))
-  lhBand.position.set(108, 12, 8)
-  parent.add(lhBand)
-  const lhLamp = mesh(
-    new THREE.SphereGeometry(1.6, 16, 16),
-    stdMat(null, '#fef08a', { emissive: '#fbbf24', emissiveIntensity: 1.4 }),
-    false,
-  )
-  lhLamp.position.set(108, 17.2, 8)
-  parent.add(lhLamp)
+  const lh = createLighthouse({ height: 16, redBand: true })
+  lh.position.set(108, 0, 8)
+  parent.add(lh)
   lampPositions.push(new THREE.Vector3(108, 17, 8))
   roadSign(parent, '潮境燈塔', 108, 6.5, 14, -0.5, 0.8)
 
@@ -177,6 +180,12 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   roadSign(parent, '釣魚平台 · 夜釣區', deckX + 1, pierDeckY + 2.6, deckZ + 10, -0.15, 0.85)
   addPierWetGleam(parent, deckX + 3.8, 0.06, deckZ, 22, Math.PI / 2)
   addPierWetGleam(parent, deckX, 0.05, deckZ + 11, 18, 0)
+  for (let z = deckZ - 8; z <= deckZ + 8; z += 7) {
+    const bollard = createMooringBollard()
+    bollard.position.set(deckX + 3.2, pierDeckY + 0.18, z)
+    parent.add(bollard)
+  }
+  addPierFishingKit(parent, deckX - 0.5, pierDeckY + 0.18, deckZ + 4)
 
   const pathToDeck = mesh(
     new THREE.BoxGeometry(4.5, 0.12, 38),
@@ -191,6 +200,7 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   )
   rockShore.position.set(-42, 0.35, 36)
   parent.add(rockShore)
+  scatterPebbles(parent, -42, 36, 40, 32, 160)
 
   const parking = mesh(
     new THREE.PlaneGeometry(48, 28),
@@ -205,13 +215,7 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   lampPost(parent, deckX, deckZ - 7, lampPositions)
 
   const spawnBoat = (x: number, z: number, len: number, rot: number) => {
-    const g = new THREE.Group()
-    g.add(
-      mesh(
-        new THREE.BoxGeometry(len * 0.85, 1, len * 0.28),
-        stdMat(null, '#1e3a5f', { roughness: 0.6 }),
-      ).translateY(0.4),
-    )
+    const g = createDetailedFishingBoat(len)
     g.position.set(x, 0, z)
     g.rotation.y = rot
     parent.add(g)

@@ -4,64 +4,28 @@ import {
   asphaltTexture,
   basaltRockTexture,
   concreteTexture,
+  corrugatedMetalTexture,
   grassTexture,
   stdMat,
+  woodDeckTexture,
 } from './sceneTextures.ts'
 import { addPierWetGleam } from './sceneAmbience.ts'
+import {
+  addPierFishingKit,
+  createDetailedFishingBoat,
+  createLighthouse,
+  createMooringBollard,
+  createNavigationBuoy,
+  createTetrapod,
+} from './propModels.ts'
 import { createSeaWater } from './seaWater.ts'
 import { mesh, roadSign } from './sceneUtils.ts'
 
-function tetrapod(parent: THREE.Object3D, x: number, z: number, scale = 1.35): void {
-  const g = new THREE.Group()
-  const mat = stdMat(null, '#64748b', { roughness: 0.95 })
-  for (let i = 0; i < 4; i++) {
-    const leg = mesh(new THREE.CylinderGeometry(0.12 * scale, 0.18 * scale, 0.9 * scale, 6), mat)
-    leg.rotation.z = Math.PI / 2.6
-    leg.rotation.y = (i / 4) * Math.PI * 2
-    leg.position.y = 0.25 * scale
-    g.add(leg)
-  }
-  g.add(mesh(new THREE.DodecahedronGeometry(0.28 * scale, 0), mat))
+function placeTetrapod(parent: THREE.Object3D, x: number, z: number, scale = 1.35): void {
+  const g = createTetrapod(scale)
   g.position.set(x, 0.05, z)
   g.rotation.y = Math.random() * Math.PI
   parent.add(g)
-}
-
-function fishingBoat(length = 11): THREE.Group {
-  const g = new THREE.Group()
-  const beam = length * 0.32
-  g.add(
-    mesh(
-      new THREE.BoxGeometry(length * 0.85, 1.1, beam),
-      stdMat(null, '#b91c1c', { roughness: 0.55, metalness: 0.12 }),
-    ).translateX(length * 0.05).translateY(0.45),
-  )
-  const bow = mesh(new THREE.ConeGeometry(beam * 0.55, length * 0.28, 4), stdMat(null, '#b91c1c'))
-  bow.rotation.z = -Math.PI / 2
-  bow.position.set(length * 0.48, 0.45, 0)
-  g.add(bow)
-  const cabin = mesh(
-    new THREE.BoxGeometry(length * 0.22, 1.8, beam * 0.72),
-    stdMat(null, '#f8fafc', { roughness: 0.5 }),
-  )
-  cabin.position.set(-length * 0.18, 1.35, 0)
-  g.add(cabin)
-  const mast = mesh(new THREE.CylinderGeometry(0.06, 0.08, 3.2, 8), stdMat(null, '#78350f'))
-  mast.position.set(length * 0.05, 2.8, 0)
-  g.add(mast)
-
-  const lamp = new THREE.Mesh(
-    new THREE.SphereGeometry(0.12, 8, 8),
-    new THREE.MeshBasicMaterial({ color: '#fef08a' }),
-  )
-  lamp.position.set(-length * 0.18, 1.55, beam * 0.38)
-  g.add(lamp)
-  const boatLight = new THREE.PointLight('#fde68a', 1.4, 14, 1.4)
-  boatLight.position.copy(lamp.position)
-  g.add(boatLight)
-  g.userData.boatLight = boatLight
-
-  return g
 }
 
 /** 海科館主題館：白量體 + 藍色曲面屋頂 + IMAX 圓筒（簡化） */
@@ -73,6 +37,11 @@ function buildNmmstCampus(): THREE.Group {
   const main = mesh(new THREE.BoxGeometry(88, 18, 52), white)
   main.position.y = 9
   g.add(main)
+  for (let y = 4; y <= 14; y += 4) {
+    const band = mesh(new THREE.BoxGeometry(88.2, 2.2, 52.2), stdMat(null, '#0ea5e9', { roughness: 0.25, metalness: 0.35 }))
+    band.position.y = y
+    g.add(band)
+  }
 
   for (let i = 0; i < 3; i++) {
     const wave = mesh(
@@ -148,7 +117,7 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
   parent.add(northBreak)
   for (let x = -72; x <= 58; x += 2.5) {
     for (let row = 0; row < 2; row++) {
-      tetrapod(parent, x, 72 + row * 1.5, 1.3)
+      placeTetrapod(parent, x, 72 + row * 1.5, 1.3)
     }
   }
 
@@ -156,32 +125,47 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
   eastBreak.position.set(118, 1.4, 8)
   parent.add(eastBreak)
   for (let z = -70; z <= 70; z += 2.4) {
-    tetrapod(parent, 112, z, 1.35)
-    tetrapod(parent, 124, z + 0.8, 1.35)
+    placeTetrapod(parent, 112, z, 1.35)
+    placeTetrapod(parent, 124, z + 0.8, 1.35)
   }
-  const lighthouse = mesh(new THREE.CylinderGeometry(1.2, 1.6, 14, 10), stdMat(null, '#f8fafc'))
-  lighthouse.position.set(118, 8.5, -62)
-  parent.add(lighthouse)
-  const lamp = mesh(
-    new THREE.SphereGeometry(1.4, 16, 16),
-    stdMat(null, '#fef08a', { emissive: '#ca8a04', emissiveIntensity: 1.1 }),
-    false,
-  )
-  lamp.position.set(118, 16.2, -62)
-  parent.add(lamp)
-  lampPositions.push(new THREE.Vector3(118, 16, -62))
+  const lh = createLighthouse({ height: 14, redBand: false })
+  lh.position.set(118, 0, -62)
+  parent.add(lh)
+  lampPositions.push(new THREE.Vector3(118, 15.5, -62))
+
+  const buoy = createNavigationBuoy('#dc2626')
+  buoy.position.set(-25, 0, 65)
+  parent.add(buoy)
+  const buoyG = createNavigationBuoy('#2563eb')
+  buoyG.position.set(8, 0, 58)
+  parent.add(buoyG)
 
   const pierLen = 38
   const pierW = 6
-  const pier = mesh(new THREE.BoxGeometry(pierW, 0.32, pierLen), pierMat)
+  const wood = woodDeckTexture()
+  const pier = mesh(
+    new THREE.BoxGeometry(pierW, 0.32, pierLen),
+    stdMat(wood, '#92400e', { repeat: [2, 14], roughness: 0.86 }),
+  )
   pier.position.set(-58, pierDeckY, 12)
   parent.add(pier)
 
-  for (let z = -pierLen / 2 + 1; z <= pierLen / 2 - 1; z += 0.5) {
-    const plank = mesh(new THREE.BoxGeometry(pierW - 0.35, 0.04, 0.09), stdMat(null, '#78716c'))
-    plank.position.set(-58, pierDeckY + 0.2, 12 + z)
+  for (let z = -pierLen / 2 + 1; z <= pierLen / 2 - 1; z += 0.48) {
+    const plank = mesh(
+      new THREE.BoxGeometry(pierW - 0.35, 0.05, 0.1),
+      stdMat(wood, '#78350f', { repeat: [1, 1], roughness: 0.9 }),
+    )
+    plank.position.set(-58, pierDeckY + 0.22, 12 + z)
     parent.add(plank)
   }
+
+  for (let z = -12; z <= 14; z += 8) {
+    const bollard = createMooringBollard()
+    bollard.position.set(-54.8, pierDeckY + 0.16, 12 + z)
+    parent.add(bollard)
+  }
+  addPierFishingKit(parent, -56, pierDeckY + 0.16, 8)
+  addPierFishingKit(parent, -57, pierDeckY + 0.16, 20)
 
   for (let z = -14; z <= 16; z += 7) {
     const post = mesh(
@@ -206,12 +190,20 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
   officeRoof.position.set(-52, 6.1, -8)
   parent.add(officeRoof)
 
-  const fishMarket = mesh(new THREE.BoxGeometry(36, 7.5, 22), stdMat(null, '#94a3b8'))
+  const fishMarket = mesh(
+    new THREE.BoxGeometry(36, 7.5, 22),
+    stdMat(corrugatedMetalTexture(), '#94a3b8', { repeat: [8, 3], roughness: 0.55, metalness: 0.35 }),
+  )
   fishMarket.position.set(-48, 4.2, -52)
   parent.add(fishMarket)
-  const fishRoof = mesh(new THREE.BoxGeometry(38, 0.5, 24), stdMat(null, '#475569'))
+  const fishRoof = mesh(new THREE.BoxGeometry(38, 0.5, 24), stdMat(null, '#475569', { metalness: 0.25 }))
   fishRoof.position.set(-48, 8.2, -52)
   parent.add(fishRoof)
+  for (let x = -58; x <= -38; x += 5) {
+    const awning = mesh(new THREE.BoxGeometry(4.5, 0.08, 3), stdMat(null, '#0369a1', { roughness: 0.65 }))
+    awning.position.set(x, 6.2, -44)
+    parent.add(awning)
+  }
 
   const unionHall = mesh(new THREE.BoxGeometry(28, 12, 16), stdMat(null, '#cbd5e1'))
   unionHall.position.set(-18, 6.5, -58)
@@ -247,7 +239,7 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
   roadSign(parent, '→ 潮境公園', -95, 3.2, -18, 0.35, 0.85)
 
   const spawnBoat = (x: number, z: number, len: number, rot: number) => {
-    const boat = fishingBoat(len)
+    const boat = createDetailedFishingBoat(len)
     boat.position.set(x, 0, z)
     boat.rotation.y = rot
     parent.add(boat)
@@ -271,9 +263,15 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
   parent.add(sea.surface)
   const waterSurface = sea.surface
 
-  const keelungIsle = mesh(new THREE.ConeGeometry(45, 28, 6), stdMat(null, '#334155', { roughness: 0.95 }))
+  const keelungIsle = mesh(
+    new THREE.ConeGeometry(45, 28, 10),
+    stdMat(basalt, '#334155', { repeat: [4, 2], roughness: 0.96 }),
+  )
   keelungIsle.position.set(-20, 6, 240)
   parent.add(keelungIsle)
+  const isleBase = mesh(new THREE.CylinderGeometry(48, 52, 4, 12), stdMat(basalt, '#1e293b', { repeat: [3, 1] }))
+  isleBase.position.set(-20, 1.5, 240)
+  parent.add(isleBase)
 
   const deckTopY = pierDeckY + 0.16
   const shuaiPosition = new THREE.Vector3(-55.8, deckTopY, 17)

@@ -175,6 +175,66 @@ export function roofTileTexture(): THREE.CanvasTexture {
   }, 512, 256)
 }
 
+export function hullPaintTexture(): THREE.CanvasTexture {
+  return canvasTexture((ctx, w, h) => {
+    ctx.fillStyle = '#991b1b'
+    ctx.fillRect(0, 0, w, h)
+    for (let i = 0; i < 6000; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.04})`
+      ctx.fillRect(Math.random() * w, Math.random() * h, 1, 2)
+    }
+    ctx.strokeStyle = 'rgba(30,30,30,0.25)'
+    for (let y = 0; y < h; y += 48) {
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(w, y)
+      ctx.stroke()
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.12)'
+    ctx.fillRect(0, h * 0.7, w, h * 0.3)
+  }, 512, 256)
+}
+
+export function ropeTexture(): THREE.CanvasTexture {
+  return canvasTexture((ctx, w, h) => {
+    ctx.fillStyle = '#d6d3d1'
+    ctx.fillRect(0, 0, w, h)
+    ctx.strokeStyle = '#a8a29e'
+    ctx.lineWidth = 2
+    for (let x = 0; x < w; x += 6) {
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x + 3, h)
+      ctx.stroke()
+    }
+  }, 64, 64)
+}
+
+export function pebbleTexture(): THREE.CanvasTexture {
+  return canvasTexture((ctx, w, h) => {
+    ctx.fillStyle = '#57534e'
+    ctx.fillRect(0, 0, w, h)
+    for (let i = 0; i < 400; i++) {
+      const g = 90 + Math.random() * 60
+      ctx.fillStyle = `rgb(${g},${g - 5},${g - 10})`
+      ctx.beginPath()
+      ctx.arc(Math.random() * w, Math.random() * h, 2 + Math.random() * 5, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }, 128, 128)
+}
+
+export function corrugatedMetalTexture(): THREE.CanvasTexture {
+  return canvasTexture((ctx, w, h) => {
+    ctx.fillStyle = '#64748b'
+    for (let x = 0; x < w; x += 14) {
+      const g = 100 + (x % 28 ? 0 : 25)
+      ctx.fillStyle = `rgb(${g - 20},${g - 10},${g})`
+      ctx.fillRect(x, 0, 14, h)
+    }
+  }, 256, 256)
+}
+
 export function waterNormalTexture(): THREE.CanvasTexture {
   return canvasTexture((ctx, w, h) => {
     const img = ctx.createImageData(w, h)
