@@ -59,6 +59,7 @@ export class BadouziScene3D {
   private horizonAmbience: HorizonAmbience | null = null
   private lastPhase = ''
   private reelRippleAcc = 0
+  private moonLight!: THREE.DirectionalLight
   private shuaiGroup!: THREE.Group
   private grandpaGroup!: THREE.Group
   private bobber!: THREE.Group
@@ -102,7 +103,7 @@ export class BadouziScene3D {
     this.scene = new THREE.Scene()
     applyNightSky(this.scene, this.renderer)
     attachNightSky(this.scene)
-    createMoonReflectionLight(this.scene)
+    this.moonLight = createMoonReflectionLight(this.scene)
     this.night = createNightLighting(this.scene)
     this.pierWorkLight = new THREE.PointLight('#fffaf0', 9, 35, 1.2)
     this.pierWorkLight.position.set(0, 3, 0)
@@ -165,6 +166,7 @@ export class BadouziScene3D {
     this.presets = spotId === 'chaojing' ? PRESETS_CHAOJING : PRESETS_BADOUZI
     this.clearEnvironment()
     this.loadEnvironment()
+    this.lastPhase = ''
     this.focusPierCamera()
   }
 
@@ -314,6 +316,7 @@ export class BadouziScene3D {
 
     this.seaWater?.setTime(wavePhase)
     this.horizonAmbience?.update(wavePhase)
+    this.moonLight.intensity = 0.32 + Math.sin(wavePhase * 0.4) * 0.06
 
     for (let i = 0; i < this.boats.length; i++) {
       const boat = this.boats[i]!
