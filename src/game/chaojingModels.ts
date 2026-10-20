@@ -11,6 +11,7 @@ import {
   stdMat,
   woodDeckTexture,
 } from './sceneTextures.ts'
+import { addPierWetGleam } from './sceneAmbience.ts'
 import { createSeaWater } from './seaWater.ts'
 import { bannerSign, mesh, roadSign } from './sceneUtils.ts'
 
@@ -174,6 +175,8 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   rail.position.set(deckX + 3.55, pierDeckY + 0.85, deckZ)
   parent.add(rail)
   roadSign(parent, '釣魚平台 · 夜釣區', deckX + 1, pierDeckY + 2.6, deckZ + 10, -0.15, 0.85)
+  addPierWetGleam(parent, deckX + 3.8, 0.06, deckZ, 22, Math.PI / 2)
+  addPierWetGleam(parent, deckX, 0.05, deckZ + 11, 18, 0)
 
   const pathToDeck = mesh(
     new THREE.BoxGeometry(4.5, 0.12, 38),
@@ -246,6 +249,6 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
     pierDeckY,
     castDirection,
     lampPositions,
-    updateSea: sea.setTime,
+    seaWater: sea,
   }
 }

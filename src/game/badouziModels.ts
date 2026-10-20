@@ -7,6 +7,7 @@ import {
   grassTexture,
   stdMat,
 } from './sceneTextures.ts'
+import { addPierWetGleam } from './sceneAmbience.ts'
 import { createSeaWater } from './seaWater.ts'
 import { mesh, roadSign } from './sceneUtils.ts'
 
@@ -48,6 +49,18 @@ function fishingBoat(length = 11): THREE.Group {
   const mast = mesh(new THREE.CylinderGeometry(0.06, 0.08, 3.2, 8), stdMat(null, '#78350f'))
   mast.position.set(length * 0.05, 2.8, 0)
   g.add(mast)
+
+  const lamp = new THREE.Mesh(
+    new THREE.SphereGeometry(0.12, 8, 8),
+    new THREE.MeshBasicMaterial({ color: '#fef08a' }),
+  )
+  lamp.position.set(-length * 0.18, 1.55, beam * 0.38)
+  g.add(lamp)
+  const boatLight = new THREE.PointLight('#fde68a', 1.4, 14, 1.4)
+  boatLight.position.copy(lamp.position)
+  g.add(boatLight)
+  g.userData.boatLight = boatLight
+
   return g
 }
 
@@ -183,6 +196,8 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
   rail.position.set(-55.05, pierDeckY + 1.05, 12)
   parent.add(rail)
   roadSign(parent, '八斗子漁港 · 突堤 · 夜釣', -54, pierDeckY + 2.4, 28, -0.35)
+  addPierWetGleam(parent, -54.2, 0.06, 22, 28, 0)
+  addPierWetGleam(parent, -52.5, 0.05, 12, 14, Math.PI / 2)
 
   const harborOffice = mesh(new THREE.BoxGeometry(14, 5.5, 10), stdMat(null, '#e7e5e4'))
   harborOffice.position.set(-52, 3.2, -8)
@@ -273,6 +288,6 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
     pierDeckY,
     castDirection,
     lampPositions,
-    updateSea: sea.setTime,
+    seaWater: sea,
   }
 }

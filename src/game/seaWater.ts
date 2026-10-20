@@ -1,32 +1,84 @@
 import * as THREE from 'three'
 import { waterNormalTexture } from './sceneTextures.ts'
 
-export interface SeaWaterBundle {
+const MAX_RIPPLES = 6
+
+export interface SeaWaterEffects {
   surface: THREE.Mesh
-  foam?: THREE.Mesh
   setTime: (t: number) => void
+  setBobber: (worldX: number, worldZ: number, active: boolean) => void
+  pushRipple: (worldX: number, worldZ: number, strength: number) => void
 }
+
+export type SeaWaterBundle = SeaWaterEffects
+
+type Ripple = { x: number; z: number; birth: number; strength: number }
 
 const vertexShader = /* glsl */ `
 uniform float uTime;
+uniform vec4 uRipples[6];
+uniform vec2 uBobber;
+uniform float uBobberActive;
+
 varying vec3 vWorldPos;
 varying vec3 vNormalW;
 varying vec2 vUv;
 varying float vWave;
+varying float vRippleMask;
 
-float waveHeight(vec2 xz) {
+float rippleMaskAt(vec2 xz) {
+  float mask = 0.0;
+  for (int i = 0; i < 6; i++) {
+    vec4 r = uRipples[i];
+    float age = uTime - r.w;
+    if (age > 0.0 && age < 5.5) {
+      float d = distance(xz, r.xy);
+      float ring = sin((d - age * 3.2) * 7.0) * exp(-age * 0.55) * exp(-d * 0.055);
+      mask += abs(ring) * r.z * 0.35;
+    }
+  }
+  if (uBobberActive > 0.5) {
+    float d = distance(xz, uBobber);
+    mask += abs(sin(d * 16.0 - uTime * 9.0) * exp(-d * 0.12)) * 0.12;
+  }
+  return mask;
+}
+
+float baseWave(vec2 xz) {
   float t = uTime;
-  float w =
+  return
     sin(xz.x * 0.11 + t * 1.35) * 0.11 +
     cos(xz.y * 0.09 + t * 1.05) * 0.09 +
     sin((xz.x * 0.07 + xz.y * 0.08) + t * 1.65) * 0.06 +
     cos(xz.x * 0.19 - xz.y * 0.14 + t * 2.1) * 0.035;
-  return w;
+}
+
+float rippleSum(vec2 xz) {
+  float h = 0.0;
+  for (int i = 0; i < 6; i++) {
+    vec4 r = uRipples[i];
+    float age = uTime - r.w;
+    if (age > 0.0 && age < 5.5) {
+      float d = distance(xz, r.xy);
+      float ring = sin((d - age * 3.2) * 7.0) * exp(-age * 0.55) * exp(-d * 0.055);
+      h += ring * r.z;
+    }
+  }
+  if (uBobberActive > 0.5) {
+    float d = distance(xz, uBobber);
+    h += sin(d * 16.0 - uTime * 9.0) * exp(-d * 0.12) * 0.028;
+  }
+  return h;
+}
+
+float waveHeight(vec2 xz) {
+  return baseWave(xz) + rippleSum(xz);
 }
 
 void main() {
   vUv = uv;
   vec3 pos = position;
+  vRippleMask = rippleMaskAt(pos.xz);
   float h = waveHeight(pos.xz);
   vWave = h;
   float eps = 0.35;
@@ -56,6 +108,7 @@ varying vec3 vWorldPos;
 varying vec3 vNormalW;
 varying vec2 vUv;
 varying float vWave;
+varying float vRippleMask;
 
 void main() {
   vec2 uvA = vUv * 8.0 + uFlowA;
@@ -80,6 +133,7 @@ void main() {
   vec3 col = waterCol;
   col += moonTint * (fresnel * 0.55 + spec + specBroad);
   col += vec3(0.02, 0.08, 0.12) * fresnel;
+  col += vec3(0.15, 0.35, 0.45) * vRippleMask;
 
   float foam = smoothstep(uFoamRadius - 6.0, uFoamRadius - 1.5, distShore);
   foam *= 0.35 + 0.65 * (0.5 + 0.5 * sin(uTime * 2.2 + vWorldPos.x * 0.2 + vWorldPos.z * 0.17));
@@ -100,7 +154,7 @@ export function createSeaWater(opts: {
   foamRadius?: number
   deepColor?: string
   shallowColor?: string
-}): SeaWaterBundle {
+}): SeaWaterEffects {
   const segX = opts.segX ?? 96
   const segY = opts.segY ?? 80
   const geo = new THREE.PlaneGeometry(opts.width, opts.depth, segX, segY)
@@ -108,6 +162,9 @@ export function createSeaWater(opts: {
 
   const normalMap = waterNormalTexture()
   normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping
+
+  const rippleUniforms = Array.from({ length: MAX_RIPPLES }, () => new THREE.Vector4(0, 0, 0, -999))
+  const ripples: Ripple[] = []
 
   const uniforms = {
     uTime: { value: 0 },
@@ -119,6 +176,9 @@ export function createSeaWater(opts: {
     uFlowB: { value: new THREE.Vector2(0, 0) },
     uFoamRadius: { value: opts.foamRadius ?? 38 },
     uShoreCenter: { value: opts.shoreCenter.clone() },
+    uRipples: { value: rippleUniforms },
+    uBobber: { value: new THREE.Vector2(0, 0) },
+    uBobberActive: { value: 0 },
   }
 
   const mat = new THREE.ShaderMaterial({
@@ -134,11 +194,37 @@ export function createSeaWater(opts: {
   surface.position.copy(opts.position)
   surface.receiveShadow = true
 
+  const syncRippleUniforms = (time: number): void => {
+    for (let i = 0; i < MAX_RIPPLES; i++) {
+      const r = ripples[i]
+      const u = rippleUniforms[i]!
+      if (r) {
+        u.set(r.x, r.z, r.strength, r.birth)
+      } else {
+        u.set(0, 0, 0, time - 999)
+      }
+    }
+  }
+
   const setTime = (t: number): void => {
     uniforms.uTime.value = t
     uniforms.uFlowA.value.set(Math.sin(t * 0.31) * 0.08 + t * 0.045, t * 0.038)
     uniforms.uFlowB.value.set(-t * 0.028, Math.cos(t * 0.27) * 0.06 + t * 0.032)
+    while (ripples.length > 0 && t - ripples[0]!.birth > 5.5) ripples.shift()
+    syncRippleUniforms(t)
   }
 
-  return { surface, setTime }
+  const pushRipple = (worldX: number, worldZ: number, strength: number): void => {
+    const birth = uniforms.uTime.value
+    ripples.push({ x: worldX, z: worldZ, birth, strength })
+    while (ripples.length > MAX_RIPPLES) ripples.shift()
+    syncRippleUniforms(birth)
+  }
+
+  const setBobber = (worldX: number, worldZ: number, active: boolean): void => {
+    uniforms.uBobber.value.set(worldX, worldZ)
+    uniforms.uBobberActive.value = active ? 1 : 0
+  }
+
+  return { surface, setTime, setBobber, pushRipple }
 }
