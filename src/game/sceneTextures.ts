@@ -180,12 +180,19 @@ export function waterNormalTexture(): THREE.CanvasTexture {
     const img = ctx.createImageData(w, h)
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        const nx = Math.sin(x * 0.08) * 0.5 + 0.5
-        const ny = Math.cos(y * 0.07) * 0.5 + 0.5
+        const u = x / w
+        const v = y / h
+        const n1x = Math.sin(u * Math.PI * 6 + v * 3) * 0.35
+        const n1y = Math.cos(v * Math.PI * 5 + u * 2) * 0.35
+        const n2x = Math.sin(u * 22 + v * 18) * 0.12
+        const n2y = Math.cos(v * 19 - u * 15) * 0.12
+        const nx = n1x + n2x
+        const ny = n1y + n2y
+        const nz = Math.sqrt(Math.max(0.02, 1 - nx * nx - ny * ny))
         const i = (y * w + x) * 4
-        img.data[i] = nx * 255
-        img.data[i + 1] = ny * 255
-        img.data[i + 2] = 255
+        img.data[i] = (nx * 0.5 + 0.5) * 255
+        img.data[i + 1] = (ny * 0.5 + 0.5) * 255
+        img.data[i + 2] = (nz * 0.5 + 0.5) * 255
         img.data[i + 3] = 255
       }
     }

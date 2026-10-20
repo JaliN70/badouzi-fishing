@@ -8,9 +8,9 @@ export interface NightLightingHandles {
 }
 
 export function applyNightSky(scene: THREE.Scene, renderer: THREE.WebGLRenderer): void {
-  scene.background = new THREE.Color('#4a6278')
-  scene.fog = new THREE.FogExp2('#5a7288', 0.0011)
-  renderer.toneMappingExposure = 1.95
+  scene.background = new THREE.Color('#1a3348')
+  scene.fog = new THREE.FogExp2('#3d5568', 0.00085)
+  renderer.toneMappingExposure = 2.05
 }
 
 export function createNightLighting(scene: THREE.Scene): NightLightingHandles {
@@ -76,9 +76,3 @@ export function syncParkLamps(
   return existing
 }
 
-export function setWaterNightLook(water: THREE.Mesh, wavePhase: number): void {
-  const mat = water.material as THREE.MeshStandardMaterial
-  mat.color.set('#1d8aaa')
-  mat.emissive.set('#38bdf8')
-  mat.emissiveIntensity = 0.42 + Math.sin(wavePhase * 1.6) * 0.08
-}

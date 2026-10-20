@@ -7,6 +7,7 @@ import {
   grassTexture,
   stdMat,
 } from './sceneTextures.ts'
+import { createSeaWater } from './seaWater.ts'
 import { mesh, roadSign } from './sceneUtils.ts'
 
 function tetrapod(parent: THREE.Object3D, x: number, z: number, scale = 1.35): void {
@@ -242,20 +243,18 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
   spawnBoat(70, 5, 11, 0.25)
   spawnBoat(-15, 45, 9, 0.6)
 
-  const waterGeo = new THREE.PlaneGeometry(300, 260, 96, 80)
-  waterGeo.rotateX(-Math.PI / 2)
-  const waterMat = new THREE.MeshStandardMaterial({
-    color: '#0e7490',
-    emissive: '#0c4a6e',
-    emissiveIntensity: 0.12,
-    roughness: 0.1,
-    metalness: 0.55,
-    transparent: true,
-    opacity: 0.93,
+  const pierFocus = new THREE.Vector3(-48, 0, 38)
+  const sea = createSeaWater({
+    width: 300,
+    depth: 260,
+    position: new THREE.Vector3(15, 0, 25),
+    shoreCenter: pierFocus,
+    foamRadius: 36,
+    shallowColor: '#0f766e',
+    deepColor: '#042f3a',
   })
-  const waterSurface = mesh(waterGeo, waterMat, false, true)
-  waterSurface.position.set(15, 0, 25)
-  parent.add(waterSurface)
+  parent.add(sea.surface)
+  const waterSurface = sea.surface
 
   const keelungIsle = mesh(new THREE.ConeGeometry(45, 28, 6), stdMat(null, '#334155', { roughness: 0.95 }))
   keelungIsle.position.set(-20, 6, 240)
@@ -264,7 +263,6 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
   const deckTopY = pierDeckY + 0.16
   const shuaiPosition = new THREE.Vector3(-55.8, deckTopY, 17)
   const grandpaPosition = new THREE.Vector3(-56.2, deckTopY, 11)
-  const pierFocus = new THREE.Vector3(-48, 0, 38)
 
   return {
     boats,
@@ -275,5 +273,6 @@ export function buildModeledBadouziHarbor(parent: THREE.Object3D): HarborLayout 
     pierDeckY,
     castDirection,
     lampPositions,
+    updateSea: sea.setTime,
   }
 }

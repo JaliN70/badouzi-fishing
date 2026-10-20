@@ -12,10 +12,10 @@ import { FISHING_SPOTS, type FishingSpotId } from './fishingSpot.ts'
 import {
   applyNightSky,
   createNightLighting,
-  setWaterNightLook,
   syncParkLamps,
   type NightLightingHandles,
 } from './sceneNight.ts'
+import { attachNightSky, createMoonReflectionLight } from './sceneSky.ts'
 
 export type CameraPreset = 'overview' | 'pier' | 'sea' | 'museum'
 
@@ -53,8 +53,7 @@ export class BadouziScene3D {
   private controls: OrbitControls
   private night!: NightLightingHandles
   private envRoot = new THREE.Group()
-  private water!: THREE.Mesh
-  private waterBaseY!: Float32Array
+  private updateSea: ((t: number) => void) | null = null
   private shuaiGroup!: THREE.Group
   private grandpaGroup!: THREE.Group
   private bobber!: THREE.Group
@@ -97,6 +96,8 @@ export class BadouziScene3D {
 
     this.scene = new THREE.Scene()
     applyNightSky(this.scene, this.renderer)
+    attachNightSky(this.scene)
+    createMoonReflectionLight(this.scene)
     this.night = createNightLighting(this.scene)
     this.pierWorkLight = new THREE.PointLight('#fffaf0', 9, 35, 1.2)
     this.pierWorkLight.position.set(0, 3, 0)
@@ -195,7 +196,7 @@ export class BadouziScene3D {
 
   private applyLayout(env: HarborLayout): void {
     this.boats = env.boats
-    this.water = env.waterSurface
+    this.updateSea = env.updateSea ?? null
     this.pierFocus.copy(env.pierFocus)
     this.seaCastDir.copy(env.castDirection)
     this.castFacingY = Math.atan2(env.castDirection.x, env.castDirection.z)
@@ -204,12 +205,6 @@ export class BadouziScene3D {
       .add(new THREE.Vector3(0, 1.2 * CHARACTER_SCALE, 0.3))
 
     this.pointLights = syncParkLamps(this.night.lampGroup, env.lampPositions, this.pointLights)
-
-    const posAttr = this.water.geometry.attributes.position
-    this.waterBaseY = new Float32Array(posAttr.count)
-    for (let i = 0; i < posAttr.count; i++) {
-      this.waterBaseY[i] = posAttr.getY(i)
-    }
 
     if (this.grandpaGroup) {
       this.grandpaGroup.position.copy(env.grandpaPosition)
@@ -307,8 +302,7 @@ export class BadouziScene3D {
     const { phase, bobberPhase, wavePhase, castQuality, castMeter, reelProgress, tension } = state
     const fishing = ['waiting', 'bite', 'reeling'].includes(phase)
 
-    this.animateWater(wavePhase)
-    setWaterNightLook(this.water, wavePhase)
+    this.updateSea?.(wavePhase)
 
     for (let i = 0; i < this.boats.length; i++) {
       const boat = this.boats[i]!
@@ -360,21 +354,6 @@ export class BadouziScene3D {
 
     this.grandpaGroup.rotation.y =
       this.castFacingY + 0.12 + Math.sin(wavePhase * 0.3) * 0.04
-  }
-
-  private animateWater(wavePhase: number): void {
-    const pos = this.water.geometry.attributes.position
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i)
-      const z = pos.getZ(i)
-      const base = this.waterBaseY[i]!
-      const wave =
-        Math.sin(x * 0.08 + wavePhase * 1.4) * 0.12 +
-        Math.cos(z * 0.07 + wavePhase * 1.1) * 0.1
-      pos.setY(i, base + wave)
-    }
-    pos.needsUpdate = true
-    this.water.geometry.computeVertexNormals()
   }
 
   private buildBobber(): THREE.Group {

@@ -329,7 +329,7 @@ export class BadouziFishingGame {
   }
 
   private update(dt: number): void {
-    this.wavePhase += dt * 1.2
+    this.wavePhase += dt * 1.45
     this.bobberPhase += dt * (this.phase === 'bite' ? 9 : 2.5)
 
     if (this.phase === 'casting') {

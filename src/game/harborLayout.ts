@@ -13,4 +13,6 @@ export interface HarborLayout {
   castDirection: THREE.Vector3
   /** 場景內可辨識的點光源（夜釣） */
   lampPositions: THREE.Vector3[]
+  /** 海水 shader 時間（波浪／流向） */
+  updateSea?: (time: number) => void
 }

@@ -11,6 +11,7 @@ import {
   stdMat,
   woodDeckTexture,
 } from './sceneTextures.ts'
+import { createSeaWater } from './seaWater.ts'
 import { bannerSign, mesh, roadSign } from './sceneUtils.ts'
 
 function lampPost(
@@ -216,20 +217,18 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   spawnBoat(25, 48, 10, 0.2)
   spawnBoat(55, 62, 8, -0.15)
 
-  const waterGeo = new THREE.PlaneGeometry(280, 240, 96, 80)
-  waterGeo.rotateX(-Math.PI / 2)
-  const waterMat = new THREE.MeshStandardMaterial({
-    color: '#0c4a6e',
-    emissive: '#082f49',
-    emissiveIntensity: 0.18,
-    roughness: 0.08,
-    metalness: 0.65,
-    transparent: true,
-    opacity: 0.92,
+  const pierFocus = new THREE.Vector3(deckX + 4, 0, deckZ + 40)
+  const sea = createSeaWater({
+    width: 280,
+    depth: 240,
+    position: new THREE.Vector3(20, 0, 45),
+    shoreCenter: pierFocus,
+    foamRadius: 34,
+    shallowColor: '#0d9488',
+    deepColor: '#022c32',
   })
-  const waterSurface = mesh(waterGeo, waterMat, false, true)
-  waterSurface.position.set(20, 0, 45)
-  parent.add(waterSurface)
+  parent.add(sea.surface)
+  const waterSurface = sea.surface
 
   const distantHill = mesh(new THREE.ConeGeometry(55, 35, 8), stdMat(null, '#1e293b', { roughness: 0.98 }))
   distantHill.position.set(-30, 12, 200)
@@ -238,8 +237,6 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
   const deckTopY = pierDeckY + 0.18
   const shuaiPosition = new THREE.Vector3(deckX - 0.6, deckTopY, deckZ + 5)
   const grandpaPosition = new THREE.Vector3(deckX - 0.6, deckTopY, deckZ - 2)
-  const pierFocus = new THREE.Vector3(deckX + 4, 0, deckZ + 40)
-
   return {
     boats,
     waterSurface,
@@ -249,5 +246,6 @@ export function buildChaojingPark(parent: THREE.Object3D): HarborLayout {
     pierDeckY,
     castDirection,
     lampPositions,
+    updateSea: sea.setTime,
   }
 }
