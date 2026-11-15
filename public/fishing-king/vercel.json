@@ -1,0 +1,9 @@
+{
+  "framework": null,
+  "installCommand": "echo skip-install",
+  "buildCommand": "echo static-site",
+  "outputDirectory": ".",
+  "headers": [
+    { "source": "/(.*)\\.wasm", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] }
+  ]
+}
