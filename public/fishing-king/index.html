@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
@@ -92,7 +92,14 @@ body {
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+<link rel="manifest" href="index.manifest.json">
 
+			<meta name="theme-color" content="#081424">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+		<meta name="apple-mobile-web-app-title" content="釣魚王">
+		<meta name="description" content="像素風釣魚遊戲：帥帥和阿公一起找傳說中的魚王。">
 	</head>
 	<body>
 		<canvas id="canvas">
@@ -128,9 +135,144 @@ body {
 	};
 })();
 </script>
+<style>
+#fk-install {
+	position: fixed; left: 50%; bottom: 16px; transform: translate(-50%, 140%);
+	z-index: 50; width: min(560px, calc(100% - 24px)); box-sizing: border-box;
+	background: #0c1e36; color: #f6efe0; border: 3px solid #f0c040; border-radius: 4px;
+	box-shadow: 0 6px 0 #04101e, 0 10px 30px rgba(0,0,0,.45);
+	font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+	padding: 12px 14px; display: flex; gap: 12px; align-items: center;
+	transition: transform .35s ease; image-rendering: pixelated;
+}
+#fk-install.show { transform: translate(-50%, 0); }
+#fk-install img { width: 56px; height: 56px; flex: none; image-rendering: pixelated; border-radius: 6px; }
+#fk-install .t { font-weight: 700; font-size: 17px; color: #ffd860; margin-bottom: 2px; }
+#fk-install .d { font-size: 14px; line-height: 1.45; }
+#fk-install .d b { color: #8ad8ff; }
+#fk-install .btns { display: flex; flex-direction: column; gap: 6px; flex: none; }
+#fk-install button {
+	font: inherit; font-size: 15px; font-weight: 700; padding: 8px 14px; cursor: pointer;
+	border: 2px solid #3a1a08; border-radius: 3px; background: #f0c040; color: #3a1a08;
+}
+#fk-install button.no { background: transparent; color: #c8d0dc; border-color: #4a5a70; font-weight: 400; }
+#fk-install .share {
+	display: inline-block; width: 14px; height: 16px; vertical-align: -3px; margin: 0 2px;
+	border: 2px solid #8ad8ff; border-top: none; position: relative; box-sizing: border-box;
+}
+#fk-install .share::before { content: ""; position: absolute; left: 3px; top: -7px; width: 2px; height: 11px; background: #8ad8ff; }
+#fk-install .share::after { content: ""; position: absolute; left: 0px; top: -8px; border: 4px solid transparent; border-bottom-color: #8ad8ff; }
+@media (max-height: 420px) { #fk-install { bottom: 8px; padding: 8px 10px; } #fk-install img { width: 44px; height: 44px; } }
+</style>
+<script>
+// 安裝提示（網頁版安裝成 App）
+(function () {
+	const KEY = 'fk-install-dismissed';
+	const ua = navigator.userAgent || '';
+	const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+	const isAndroid = /Android/.test(ua);
+	const isIOSOther = isIOS && /CriOS|FxiOS|EdgiOS/.test(ua);
+	let deferred = null;
+	let box = null;
+
+	function standalone() {
+		return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+			(window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) ||
+			navigator.standalone === true;
+	}
+	function dismissedRecently() {
+		try { return Date.now() - Number(localStorage.getItem(KEY) || 0) < 3 * 24 * 3600 * 1000; } catch (e) { return false; }
+	}
+	function remember() { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {} }
+
+	function build(title, desc, primary) {
+		hide();
+		box = document.createElement('div');
+		box.id = 'fk-install';
+		box.setAttribute('role', 'dialog');
+		box.setAttribute('aria-label', title);
+		box.innerHTML = '<img src="index.192x192.png" alt="">' +
+			'<div style="flex:1"><div class="t"></div><div class="d"></div></div><div class="btns"></div>';
+		box.querySelector('.t').textContent = title;
+		box.querySelector('.d').innerHTML = desc;
+		const btns = box.querySelector('.btns');
+		if (primary) {
+			const b = document.createElement('button');
+			b.textContent = primary.label;
+			b.onclick = primary.run;
+			btns.appendChild(b);
+		}
+		const no = document.createElement('button');
+		no.className = 'no';
+		no.textContent = primary ? '之後再說' : '知道了';
+		no.onclick = function () { remember(); hide(); };
+		btns.appendChild(no);
+		document.body.appendChild(box);
+		requestAnimationFrame(function () { requestAnimationFrame(function () { box.classList.add('show'); }); });
+	}
+	function hide() {
+		if (box) { const b = box; box = null; b.classList.remove('show'); setTimeout(function () { b.remove(); }, 400); }
+	}
+	function promptInstall() {
+		if (!deferred) { return; }
+		const p = deferred;
+		deferred = null;
+		p.prompt();
+		p.userChoice.then(function (r) { if (r && r.outcome !== 'accepted') { remember(); } }).catch(function () {});
+		hide();
+	}
+	function showIOS() {
+		const how = isIOSOther
+			? '點網址列旁邊的<span class="share"></span>「分享」，選<b>「加入主畫面」</b>。找不到的話，用 <b>Safari</b> 開這個網址再試一次。'
+			: '點畫面下方的<span class="share"></span>「分享」，往下滑選<b>「加入主畫面」</b>，再按右上角的「新增」。';
+		build('把釣魚王加到主畫面', how + '<br>之後從主畫面打開就是全螢幕。', null);
+	}
+	function showPrompt() {
+		build('安裝釣魚王', '裝到桌面或主畫面，<b>全螢幕</b>開啟、載入更快，像 App 一樣玩。',
+			{ label: '安裝', run: promptInstall });
+	}
+	function showGeneric() {
+		build('安裝釣魚王', isAndroid
+			? '點瀏覽器右上角的「⋮」選單，選<b>「安裝應用程式」</b>或<b>「加到主畫面」</b>。'
+			: '在瀏覽器網址列右邊找<b>「安裝」</b>圖示（電腦版 Chrome／Edge），或從選單選「安裝釣魚王」。', null);
+	}
+
+	window.addEventListener('beforeinstallprompt', function (e) {
+		e.preventDefault();
+		deferred = e;
+		if (!standalone() && !dismissedRecently()) {
+			setTimeout(function () { if (deferred && !box) { showPrompt(); } }, 6000);
+		}
+	});
+	window.addEventListener('appinstalled', function () {
+		deferred = null;
+		hide();
+		build('安裝完成！', '之後可以直接從桌面或主畫面打開<b>釣魚王</b>。', null);
+		setTimeout(hide, 5000);
+	});
+	window.addEventListener('load', function () {
+		if (isIOS && !standalone() && !dismissedRecently()) {
+			setTimeout(function () { if (!box) { showIOS(); } }, 8000);
+		}
+	});
+
+	// 給遊戲裡的「安裝到主畫面」按鈕用
+	window.fishingKing = {
+		isStandalone: standalone,
+		canOffer: function () { return !standalone() && (deferred !== null || isIOS || isAndroid); },
+		showInstall: function () {
+			if (standalone()) { return 'installed'; }
+			if (deferred) { promptInstall(); return 'prompt'; }
+			if (isIOS) { showIOS(); return 'ios'; }
+			showGeneric();
+			return 'generic';
+		},
+	};
+})();
+</script>
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"mainPack":"game-data.wasm","fileSizes":{"game-data.wasm":2838388,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"mainPack":"game-data.wasm","fileSizes":{"game-data.wasm":2850052,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 

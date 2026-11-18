@@ -1,0 +1,36 @@
+{
+ "background_color": "#081424",
+ "display": "standalone",
+ "icons": [
+  {
+   "sizes": "144x144",
+   "src": "index.144x144.png",
+   "type": "image/png"
+  },
+  {
+   "sizes": "180x180",
+   "src": "index.180x180.png",
+   "type": "image/png"
+  },
+  {
+   "sizes": "192x192",
+   "src": "index.192x192.png",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "sizes": "512x512",
+   "src": "index.512x512.png",
+   "type": "image/png"
+  }
+ ],
+ "name": "釣魚王",
+ "orientation": "landscape",
+ "start_url": "./index.html",
+ "short_name": "釣魚王",
+ "id": "./",
+ "scope": "./",
+ "lang": "zh-Hant",
+ "description": "像素風釣魚遊戲：帥帥和阿公一起找傳說中的魚王。",
+ "theme_color": "#081424"
+}
